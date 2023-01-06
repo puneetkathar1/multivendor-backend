@@ -1,1 +1,1 @@
-export { categoryRouter } from './category.router';
+export { categoryRouter } from './category.router.js';

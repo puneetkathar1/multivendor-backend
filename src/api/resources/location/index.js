@@ -1,1 +1,1 @@
-export { locationRouter } from './location.router';
+export { locationRouter } from './location.router.js';

@@ -1,10 +1,10 @@
 import express from 'express';
-import vendorController from './vendor.controller';
-import { sanitize } from '../../../middleware/sanitizer';
-import { jwtStrategy} from '../../../middleware/strategy';
-import upload from '../../../awsbucket';
+import vendorController from './vendor.controller.js';
+import { sanitize } from '../../../middleware/sanitizer.js';
+import { jwtStrategy} from '../../../middleware/strategy.js';
+import upload from '../../../awsbucket.js';
 
-import { validateBody, schemas } from '../../../middleware/validator';
+import { validateBody, schemas } from '../../../middleware/validator.js';
 export const vendorRouter = express.Router();
 
 //admin panel

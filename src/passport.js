@@ -1,24 +1,24 @@
-import passport from "passport";
-import { Strategy as JwtStrategy } from "passport-jwt";
-import { Strategy as LocalStrategy } from "passport-local";
-const { Op } = require("sequelize");
-import bcrypt from "bcrypt-nodejs";
+import passport from 'passport'
+import { Strategy as JwtStrategy } from 'passport-jwt'
+import { Strategy as LocalStrategy } from 'passport-local'
+const { Op } = require('sequelize')
+import bcrypt from 'bcrypt-nodejs'
 
-import config from "./config";
-import { db } from "./models";
+import config from './config/index.js'
+import { db } from './models/index.js'
 var TokenExtractor = function (req) {
-  var token = null;
+  var token = null
   if (req && req.cookies) {
-    token = req.cookies["XSRF-token"];
+    token = req.cookies['XSRF-token']
   }
-  if (!token && req.headers["authorization"]) {
-    token = req.headers["authorization"];
+  if (!token && req.headers['authorization']) {
+    token = req.headers['authorization']
   }
-  return token;
-};
+  return token
+}
 
 passport.use(
-  "user-jwt",
+  'user-jwt',
   new JwtStrategy(
     {
       jwtFromRequest: TokenExtractor,
@@ -26,26 +26,26 @@ passport.use(
     },
     async (payload, done) => {
       try {
-        var user = await db.user.findOne({ where: { id: payload.sub } });
+        var user = await db.user.findOne({ where: { id: payload.sub } })
         if (new Date(payload.exp) < new Date()) {
-          return done("expired", false);
+          return done('expired', false)
         }
         if (!user) {
-          return done("user", false);
+          return done('user', false)
         }
-        done(null, user);
+        done(null, user)
       } catch (error) {
-        done(error, false);
+        done(error, false)
       }
-    }
-  )
-);
+    },
+  ),
+)
 
 passport.use(
-  "user-local",
+  'user-local',
   new LocalStrategy(
     {
-      usernameField: "email",
+      usernameField: 'email',
       passReqToCallback: true,
     },
     async (req, email, password, done) => {
@@ -54,45 +54,45 @@ passport.use(
           where: {
             email: email,
             verify: true,
-            [Op.or]: [{ role: "admin" }, { role: "emp" }],
+            [Op.or]: [{ role: 'admin' }, { role: 'emp' }],
           },
-        });
+        })
         if (!user) {
-          return done(null, false);
+          return done(null, false)
         }
 
-        if (user.status == "inactive") {
-          return done("invalid", false);
+        if (user.status == 'inactive') {
+          return done('invalid', false)
         }
 
         if (user.attempt == 5) {
-          return done("attempt", false);
+          return done('attempt', false)
         }
 
-        var isMatch = bcrypt.compareSync(password, user.password);
+        var isMatch = bcrypt.compareSync(password, user.password)
 
         if (!isMatch) {
           user.update({
             attempt: user.attempt + 1,
-          });
-          return done("attempt:" + (5 - user.attempt), false);
+          })
+          return done('attempt:' + (5 - user.attempt), false)
         } else {
-          user.update({ attempt: 0 });
+          user.update({ attempt: 0 })
         }
-        done(null, user);
+        done(null, user)
       } catch (error) {
-        console.log(error);
-        done(error, false);
+        console.log(error)
+        done(error, false)
       }
-    }
-  )
-);
+    },
+  ),
+)
 
 passport.use(
-  "seller-local",
+  'seller-local',
   new LocalStrategy(
     {
-      usernameField: "email",
+      usernameField: 'email',
       passReqToCallback: true,
     },
     async (req, email, password, done) => {
@@ -103,41 +103,41 @@ passport.use(
             email: email,
             role: req.body.role,
           },
-        });
+        })
         if (!user) {
-          return done(null, false);
+          return done(null, false)
         }
 
-        if (user.status == "inactive") {
-          return done("invalid", false);
+        if (user.status == 'inactive') {
+          return done('invalid', false)
         }
         if (!user.verify) {
-          return done("invalid", false);
+          return done('invalid', false)
         }
         if (user.attempt == 5) {
-          return done("attempt", false);
+          return done('attempt', false)
         }
 
-        var isMatch = bcrypt.compareSync(password, user.password);
+        var isMatch = bcrypt.compareSync(password, user.password)
 
         if (!isMatch) {
           user.update({
             attempt: user.attempt + 1,
-          });
-          return done("attempt:" + (5 - user.attempt), false);
+          })
+          return done('attempt:' + (5 - user.attempt), false)
         } else {
-          user.update({ attempt: 0 });
+          user.update({ attempt: 0 })
         }
-        done(null, user);
+        done(null, user)
       } catch (error) {
-        done(error, false);
+        done(error, false)
       }
-    }
-  )
-);
+    },
+  ),
+)
 
 passport.use(
-  "customer-jwt",
+  'customer-jwt',
   new JwtStrategy(
     {
       jwtFromRequest: TokenExtractor,
@@ -145,65 +145,65 @@ passport.use(
     },
     async (payload, done) => {
       try {
-        var user = await db.customer.findOne({ where: { id: payload.sub } });
+        var user = await db.customer.findOne({ where: { id: payload.sub } })
 
         if (new Date(payload.exp) < new Date()) {
-          return done("expired", false);
+          return done('expired', false)
         }
 
         if (!user) {
-          return done("user", false);
+          return done('user', false)
         }
-        done(null, user);
+        done(null, user)
       } catch (error) {
-        done(error, false);
+        done(error, false)
       }
-    }
-  )
-);
+    },
+  ),
+)
 passport.use(
-  "customer-local",
+  'customer-local',
   new LocalStrategy(
     {
-      usernameField: "email",
+      usernameField: 'email',
       passReqToCallback: true,
     },
     async (req, email, password, done) => {
       try {
         const user = await db.customer.findOne({
           where: { email: email, role: req.body.role },
-        });
+        })
 
         if (!user) {
-          return done(null, false);
+          return done(null, false)
         }
         if (!user.verify) {
-          return done("not verified", false);
+          return done('not verified', false)
         }
 
-        if (user.status == "inactive") {
-          return done("invalid", false);
+        if (user.status == 'inactive') {
+          return done('invalid', false)
         }
 
         if (user.attempt == 5) {
-          return done("attempt", false);
+          return done('attempt', false)
         }
 
-        var isMatch = bcrypt.compareSync(password, user.password);
+        var isMatch = bcrypt.compareSync(password, user.password)
 
         if (!isMatch) {
           user.update({
             attempt: user.attempt + 1,
-          });
-          return done("attempt:" + (5 - user.attempt), false);
+          })
+          return done('attempt:' + (5 - user.attempt), false)
         } else {
-          user.update({ attempt: 0 });
+          user.update({ attempt: 0 })
         }
-        done(null, user);
+        done(null, user)
       } catch (error) {
-        console.log(error);
-        done(error, false);
+        console.log(error)
+        done(error, false)
       }
-    }
-  )
-);
+    },
+  ),
+)

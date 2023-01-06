@@ -1,34 +1,34 @@
-import { db } from "../../../models";
-const { Op, where } = require("sequelize");
-import { queue } from "../../../kue";
-import config from "../../../config";
-import AWS from "aws-sdk";
-import moment from "moment";
-var Util = require("../../../helpers/Util");
+import { db } from '../../../models/index.js'
+const { Op, where } = require('sequelize')
+import { queue } from '../../../kue.js'
+import config from '../../../config/index.js'
+import AWS from 'aws-sdk'
+import moment from 'moment'
+var Util = require('../../../helpers/Util')
 
 const s3 = new AWS.S3({
   accessKeyId: config.app.AWS_ACCESS_KEY,
   secretAccessKey: config.app.AWS_SECRET_KEY,
-});
+})
 
 var deleteFileFromS3 = async (imgUrl) => {
   try {
-    const lastItem = imgUrl.substring(imgUrl.lastIndexOf("/") + 1);
+    const lastItem = imgUrl.substring(imgUrl.lastIndexOf('/') + 1)
     var params = {
-      Bucket: "grociproduct",
+      Bucket: 'grociproduct',
       Key: lastItem,
-    };
+    }
     s3.deleteObject(params, (error, data) => {
       if (error) {
-        console.log(error, error.stack);
+        console.log(error, error.stack)
       }
-      return data;
-    });
+      return data
+    })
   } catch (error) {
-    assert.isNotOk(error, "Promise error");
-    done();
+    assert.isNotOk(error, 'Promise error')
+    done()
   }
-};
+}
 
 export default {
   /* Add user api start here................................*/
@@ -45,8 +45,8 @@ export default {
         status,
         productVariants,
         desc,
-      } = req.body;
-      let varients = JSON.parse(productVariants);
+      } = req.body
+      let varients = JSON.parse(productVariants)
       db.product
         .findOne({
           where: { name: name },
@@ -54,7 +54,7 @@ export default {
         .then(async (product) => {
           if (!product) {
             // let code = ;
-            const t = await db.sequelize.transaction();
+            const t = await db.sequelize.transaction()
             try {
               const productCreated = await db.product.create(
                 {
@@ -63,22 +63,22 @@ export default {
                   childCategoryId: childCategoryId,
                   name: name,
                   slug: slug,
-                  status: "inactive",
+                  status: 'inactive',
                   brandId: brand,
                   desc: desc,
-                  photo: req.file ? req.file.location : "",
+                  photo: req.file ? req.file.location : '',
                 },
-                { transaction: t }
-              );
+                { transaction: t },
+              )
 
-              let priceEntries = [];
+              let priceEntries = []
               for (var i = 0; i < varients.length; i++) {
                 priceEntries.push({
                   productId: productCreated.id,
                   productName: varients[i].productName,
                   productCode: varients[i].productCode
                     ? varients[i].productCode
-                    : "PD" + Math.random().toString(36).substr(2, 4),
+                    : 'PD' + Math.random().toString(36).substr(2, 4),
                   actualPrice: varients[i].actualPrice,
                   distributorPrice: varients[i].distributorPrice,
                   marginPer: varients[i].marginPer,
@@ -94,43 +94,43 @@ export default {
                   discount: varients[i].discount,
                   total: varients[i].total,
                   netPrice: varients[i].netPrice,
-                });
+                })
               }
               if (priceEntries.length)
                 await db.ProductVariant.bulkCreate(priceEntries, {
                   transaction: t,
-                });
+                })
 
-              return t.commit();
+              return t.commit()
             } catch (error) {
               // If the execution reaches this line, an error was thrown.
-              await t.rollback();
-              throw error;
+              await t.rollback()
+              throw error
             }
           }
-          throw new RequestError("Already exist product", 409);
+          throw new RequestError('Already exist product', 409)
         })
 
         .then((product) => {
           res
             .status(200)
-            .json({ success: true, msg: "Successfully inserted product" });
+            .json({ success: true, msg: 'Successfully inserted product' })
         })
         .catch(function (err) {
-          console.log(err);
-          next(err);
-        });
+          console.log(err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async index(req, res, next) {
     try {
-      const { supplierId, categoryId, subCategoryId } = req.query;
+      const { supplierId, categoryId, subCategoryId } = req.query
       db.product
         .findAll({
-          order: [["createdAt", "DESC"]],
+          order: [['createdAt', 'DESC']],
           where: {
             supplierId: supplierId,
             categoryId: categoryId,
@@ -138,28 +138,28 @@ export default {
           },
         })
         .then((product) => {
-          res.status(200).json({ success: true, product });
+          res.status(200).json({ success: true, product })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async getAllProductList(req, res, next) {
-    let limit = 40;
-    let offset = 0;
-    let page = 1;
+    let limit = 40
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
-    let { status, id, categoryId } = req.body;
+    let { status, id, categoryId } = req.body
     try {
       if (id) {
         db.product
@@ -168,12 +168,12 @@ export default {
             include: [{ model: db.productphoto }, { model: db.ProductVariant }],
           })
           .then((list) => {
-            res.status(200).json({ product: list });
+            res.status(200).json({ product: list })
           })
           .catch(function (err) {
-            console.log("some error", err);
-            next(err);
-          });
+            console.log('some error', err)
+            next(err)
+          })
       } else if (status && categoryId) {
         db.product
           .findAll({
@@ -183,21 +183,21 @@ export default {
             // include: [{ model: db.SubCategory, attributes: ["id", "sub_name"], include: [{ model: db.category, attributes: ["id", "name"] }] }],
           })
           .then((list) => {
-            res.status(200).json({ product: list });
+            res.status(200).json({ product: list })
           })
           .catch(function (err) {
-            console.log("some error", err);
-            next(err);
-          });
+            console.log('some error', err)
+            next(err)
+          })
       } else {
         db.product
           .count()
           .then((count) => {
-            let pages = Math.ceil(count / limit);
-            offset = limit * (page - 1);
+            let pages = Math.ceil(count / limit)
+            offset = limit * (page - 1)
             return db.product
               .findAll({
-                order: [["createdAt", "DESC"]],
+                order: [['createdAt', 'DESC']],
                 include: [
                   { model: db.productphoto },
                   { model: db.ProductVariant },
@@ -207,43 +207,43 @@ export default {
                 limit: limit,
                 offset: offset,
               })
-              .then((r) => [r, pages, count]);
+              .then((r) => [r, pages, count])
           })
           .then(([list, pages, count]) => {
-            res.status(200).json({ product: list, count: count, pages: pages });
+            res.status(200).json({ product: list, count: count, pages: pages })
           })
           .catch(function (err) {
-            console.log("some error", err);
-            next(err);
-          });
+            console.log('some error', err)
+            next(err)
+          })
       }
     } catch (err) {
-      next(err);
+      next(err)
     }
   },
   async getProductForFlash(req, res, next) {
     try {
-      const query = {};
-      query.where = {};
+      const query = {}
+      query.where = {}
       query.where.SellerId = {
         [Op.ne]: null,
-      };
+      }
       query.where.name = {
         [Op.ne]: null,
-      };
+      }
       query.where.PubilshStatus = {
-        [Op.eq]: "Published",
-      };
-      query.attributes = ["id", "name", "photo"];
-      query.order = [["createdAt", "DESC"]];
+        [Op.eq]: 'Published',
+      }
+      query.attributes = ['id', 'name', 'photo']
+      query.order = [['createdAt', 'DESC']]
       query.include = [
         {
           model: db.ProductVariant,
         },
-      ];
-      let product = await db.product.findAll({ ...query });
+      ]
+      let product = await db.product.findAll({ ...query })
       if (product.length > 0) {
-        const arrData = [];
+        const arrData = []
         product.forEach((value) => {
           const dataList = {
             id: value.id,
@@ -267,21 +267,21 @@ export default {
             discountPer: value.ProductVariants[0]
               ? value.ProductVariants[0].discountPer
               : null,
-          };
-          arrData.push(dataList);
-        });
+          }
+          arrData.push(dataList)
+        })
         var response = Util.getFormatedResponse(false, arrData, {
-          message: "Success",
-        });
-        res.status(response.code).json(response);
+          message: 'Success',
+        })
+        res.status(response.code).json(response)
       } else {
         var response = Util.getFormatedResponse(false, {
-          message: "No data found",
-        });
-        res.status(response.code).json(response);
+          message: 'No data found',
+        })
+        res.status(response.code).json(response)
       }
     } catch (err) {
-      next(err);
+      next(err)
     }
   },
   async update(req, res, next) {
@@ -297,8 +297,8 @@ export default {
         status,
         desc,
         productVariants,
-      } = req.body;
-      let varients = JSON.parse(productVariants);
+      } = req.body
+      let varients = JSON.parse(productVariants)
       db.product
         .findOne({ where: { id: productId } })
         .then(async (product) => {
@@ -314,19 +314,19 @@ export default {
                   : product.childCategoryId,
                 name: name,
                 slug: slug,
-                status: parseInt(status) ? "active" : "inactive",
+                status: parseInt(status) ? 'active' : 'inactive',
                 brandId: brand ? brand : product.brandId,
                 desc: desc,
                 photo: req.file ? req.file.location : product.photo,
               },
-              { where: { id: product.id } }
-            );
+              { where: { id: product.id } },
+            )
           }
         })
         .then((list) => {
           if (varients.length) {
-            let code = "PD" + Math.random().toString(36).substr(2, 4);
-            let priceEntries = [];
+            let code = 'PD' + Math.random().toString(36).substr(2, 4)
+            let priceEntries = []
             for (var i = 0; i < varients.length; i++) {
               priceEntries.push({
                 productId: productId,
@@ -350,58 +350,58 @@ export default {
                 discount: varients[i].discount,
                 total: varients[i].total,
                 netPrice: varients[i].netPrice,
-              });
+              })
             }
             return db.ProductVariant.bulkCreate(priceEntries, {
               updateOnDuplicate: Object.keys(priceEntries[0]),
-            });
+            })
           }
         })
         .then((p) => {
-          res.status(200).json({ success: true, msg: "Updated Successfully" });
+          res.status(200).json({ success: true, msg: 'Updated Successfully' })
         })
         .catch(function (err) {
-          res.status(500).send({ success: false, msg: err });
-          next(err);
-        });
+          res.status(500).send({ success: false, msg: err })
+          next(err)
+        })
     } catch (err) {
-      res.status(500).send({ success: false, msg: err });
+      res.status(500).send({ success: false, msg: err })
     }
   },
   async searchAllProductList(req, res, next) {
     try {
       db.product
         .findAll({
-          order: [["createdAt", "DESC"]],
+          order: [['createdAt', 'DESC']],
         })
         .then((product) => {
-          res.status(200).json({ success: true, data: product });
+          res.status(200).json({ success: true, data: product })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
   async getProductListByCategory(req, res, next) {
     try {
       db.product
         .findAll({
-          order: [["createdAt", "DESC"]],
+          order: [['createdAt', 'DESC']],
           where: {
             categoryId: req.query.categoryId,
             subCategoryId: req.query.subCategoryId,
           },
         })
         .then((list) => {
-          res.status(200).json({ success: true, data: list });
+          res.status(200).json({ success: true, data: list })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
   async getProductListById(req, res, next) {
@@ -409,22 +409,22 @@ export default {
       db.product
         .findAll({
           where: { id: req.query.id },
-          include: [{ model: db.productphoto, attributes: ["id", "imgUrl"] }],
-          order: [["createdAt", "DESC"]],
+          include: [{ model: db.productphoto, attributes: ['id', 'imgUrl'] }],
+          order: [['createdAt', 'DESC']],
         })
         .then((list) => {
-          res.status(200).json({ success: true, product: list });
+          res.status(200).json({ success: true, product: list })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async getWebProductListById(req, res, next) {
-    let { varientId, productId } = req.body;
+    let { varientId, productId } = req.body
     try {
       if (varientId && productId) {
         db.product
@@ -437,26 +437,26 @@ export default {
                 where: { id: varientId, productId: productId },
               },
               { model: db.Seo_Details },
-              { model: db.ch_brand_detail, attributes: ["id", "name"] },
+              { model: db.ch_brand_detail, attributes: ['id', 'name'] },
             ],
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
           })
           .then((list) => {
             return db.productphoto
               .findAll({
                 where: { varientId: varientId, productId: productId },
               })
-              .then((r) => [r, list]);
+              .then((r) => [r, list])
           })
           .then(([imglist, list]) => {
             // console.log(JSON.stringify(imglist))
             res
               .status(200)
-              .json({ success: true, data: list, imglist: imglist });
+              .json({ success: true, data: list, imglist: imglist })
           })
           .catch(function (err) {
-            next(err);
-          });
+            next(err)
+          })
       } else {
         db.product
           .findOne({
@@ -464,43 +464,49 @@ export default {
             include: [
               {
                 model: db.productphoto,
-                attributes: ["id", "imgUrl", "productid", "varientId"],
+                attributes: ['id', 'imgUrl', 'productid', 'varientId'],
               },
               { model: db.ProductVariant },
               { model: db.Seo_Details },
-              { model: db.ch_brand_detail, attributes: ["id", "name"] },
+              { model: db.ch_brand_detail, attributes: ['id', 'name'] },
             ],
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
           })
           .then((list) => {
-            res.status(200).json({ success: true, data: list });
+            res.status(200).json({ success: true, data: list })
           })
           .catch(function (err) {
-            console.log(err);
-            next(err);
-          });
+            console.log(err)
+            next(err)
+          })
       }
     } catch (err) {
-      console.log(err);
-      throw new RequestError("Error");
+      console.log(err)
+      throw new RequestError('Error')
     }
   },
   async addProductOffer(req, res, next) {
     try {
-      const { productId, qty, discount_per, discount_price, total, net_price } =
-        req.body;
+      const {
+        productId,
+        qty,
+        discount_per,
+        discount_price,
+        total,
+        net_price,
+      } = req.body
       db.ProductOffer.findOne({ where: { id: productId } })
         .then((list) => {
           if (!list) {
             return db.ProductOffer.create({
               productId: productId,
-              image: req.file ? req.file.location : "",
+              image: req.file ? req.file.location : '',
               qty: qty,
               discount_per: discount_per,
               discount_price: discount_price,
               total: total,
               net_price: net_price,
-            });
+            })
           } else {
             return db.ProductOffer.update(
               {
@@ -510,18 +516,18 @@ export default {
                 total: total,
                 net_price: net_price,
               },
-              { where: { id: list.id } }
-            );
+              { where: { id: list.id } },
+            )
           }
         })
         .then((p) => {
-          res.status(200).json({ success: true, msg: "Successfully" });
+          res.status(200).json({ success: true, msg: 'Successfully' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
@@ -532,25 +538,25 @@ export default {
           {
             model: db.product,
             attributes: [
-              "id",
-              "categoryId",
-              "price",
-              "item_name",
-              "description",
-              "brand",
+              'id',
+              'categoryId',
+              'price',
+              'item_name',
+              'description',
+              'brand',
             ],
-            include: [{ model: db.category, attributes: ["id", "name"] }],
+            include: [{ model: db.category, attributes: ['id', 'name'] }],
           },
         ],
       })
         .then((list) => {
-          res.status(200).json({ success: true, data: list });
+          res.status(200).json({ success: true, data: list })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
@@ -558,118 +564,118 @@ export default {
     db.product
       .findOne({ where: { id: parseInt(req.query.id) } })
       .then(async (product) => {
-        const t = await db.sequelize.transaction();
+        const t = await db.sequelize.transaction()
         if (product) {
           try {
             await db.ProductVariant.destroy(
               { where: { productId: product.id } },
-              { transaction: t }
-            );
+              { transaction: t },
+            )
             await db.product.destroy(
               { where: { id: product.id } },
-              { transaction: t }
-            );
+              { transaction: t },
+            )
 
-            return t.commit();
+            return t.commit()
           } catch (err) {
-            await t.rollback();
-            throw error;
+            await t.rollback()
+            throw error
           }
         }
-        throw new RequestError("Product is not found");
+        throw new RequestError('Product is not found')
       })
       .then((re) => {
-        return res.status(200).json({ status: "deleted Product Seccessfully" });
+        return res.status(200).json({ status: 'deleted Product Seccessfully' })
       })
       .catch((err) => {
-        next(err);
-      });
+        next(err)
+      })
   },
 
   async productVarients(req, res, next) {
     db.ProductVariant.findOne({ where: { id: parseInt(req.query.id) } })
       .then(async (product) => {
-        const t = await db.sequelize.transaction();
+        const t = await db.sequelize.transaction()
         if (product) {
           try {
             await db.ProductVariant.destroy(
               { where: { id: product.id } },
-              { transaction: t }
-            );
-            return t.commit();
+              { transaction: t },
+            )
+            return t.commit()
           } catch (err) {
-            await t.rollback();
-            throw error;
+            await t.rollback()
+            throw error
           }
         }
-        throw new RequestError("Productprice is not found");
+        throw new RequestError('Productprice is not found')
       })
       .then((re) => {
         return res
           .status(200)
-          .json({ status: "deleted Productprice Seccessfully" });
+          .json({ status: 'deleted Productprice Seccessfully' })
       })
       .catch((err) => {
-        next(err);
-      });
+        next(err)
+      })
   },
   async newArrivalProduct(req, res, next) {
     try {
       db.product
         .findAll({
-          order: [["createdAt", "DESC"]],
+          order: [['createdAt', 'DESC']],
           where: {
             [Op.and]: [
               {
                 createdAt: {
-                  [Op.gte]: moment().subtract(7, "days").toDate(),
+                  [Op.gte]: moment().subtract(7, 'days').toDate(),
                 },
               },
-              { status: "active" },
+              { status: 'active' },
             ],
           },
           include: [
-            { model: db.ch_brand_detail, attributes: ["id", "name"] },
-            { model: db.productphoto, attributes: ["id", "imgUrl"] },
+            { model: db.ch_brand_detail, attributes: ['id', 'name'] },
+            { model: db.productphoto, attributes: ['id', 'imgUrl'] },
             { model: db.ProductVariant },
           ],
         })
         .then((list) => {
-          res.status(200).json({ success: true, data: list });
+          res.status(200).json({ success: true, data: list })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async productOfferDelete(req, res, next) {
     db.ProductOffer.findOne({ where: { id: parseInt(req.params.id) } })
       .then((product) => {
         if (product) {
-          return db.ProductOffer.destroy({ where: { id: product.id } });
+          return db.ProductOffer.destroy({ where: { id: product.id } })
         }
-        throw new RequestError("Product is not found");
+        throw new RequestError('Product is not found')
       })
       .then((re) => {
-        return res.status(200).json({ status: "deleted Product Seccessfully" });
+        return res.status(200).json({ status: 'deleted Product Seccessfully' })
       })
       .catch((err) => {
-        next(err);
-      });
+        next(err)
+      })
   },
 
   async multiplePhotoUpload(req, res, next) {
-    let attachmentEntries = [];
-    var productId = req.body.productId;
+    let attachmentEntries = []
+    var productId = req.body.productId
     for (var i = 0; i < req.files.length; i++) {
       attachmentEntries.push({
         productId: productId,
         name: req.files[i].filename,
         mime: req.files[i].mimetype,
         imgUrl: req.files[i].location,
-      });
+      })
     }
 
     db.product
@@ -679,27 +685,27 @@ export default {
       .then((r) => {
         if (r) {
           return queue
-            .create("img-upload", {
+            .create('img-upload', {
               productId: productId,
               productName: r.item_name,
               attachmentEntries: attachmentEntries,
             })
-            .save();
+            .save()
         }
-        throw new RequestError("ProductId is not found");
+        throw new RequestError('ProductId is not found')
       })
       .then((r) => {
-        res.status(200).json({ success: r });
+        res.status(200).json({ success: r })
       })
       .catch(function (error) {
-        console.log(error);
-        res.status(500).json({ errors: ["Error insert photo"] });
-      });
+        console.log(error)
+        res.status(500).json({ errors: ['Error insert photo'] })
+      })
   },
 
   async varientImageUpload(req, res, next) {
-    let attachmentEntries = [];
-    let { productId, varientId } = req.body;
+    let attachmentEntries = []
+    let { productId, varientId } = req.body
     for (var i = 0; i < req.files.length; i++) {
       attachmentEntries.push({
         productId: productId,
@@ -707,7 +713,7 @@ export default {
         name: req.files[i].filename,
         mime: req.files[i].mimetype,
         imgUrl: req.files[i].location,
-      });
+      })
     }
     db.ProductVariant.findOne({
       where: { id: varientId, productId: productId },
@@ -715,35 +721,35 @@ export default {
       .then((r) => {
         if (r) {
           return queue
-            .create("img-upload", {
+            .create('img-upload', {
               productId: req.body.productId,
               varientId: req.body.varientId,
               productName: r.item_name,
               attachmentEntries: attachmentEntries,
             })
-            .save();
+            .save()
         }
-        throw new RequestError("ProductId is not found");
+        throw new RequestError('ProductId is not found')
       })
       .then((r) => {
-        res.status(200).json({ success: r });
+        res.status(200).json({ success: r })
       })
       .catch(function (error) {
-        console.log(error);
-        res.status(500).json({ errors: ["Error insert photo"] });
-      });
+        console.log(error)
+        res.status(500).json({ errors: ['Error insert photo'] })
+      })
   },
 
   async getAllPhoto(req, res, next) {
-    let limit = 50;
-    let offset = 0;
-    let page = 1;
+    let limit = 50
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
       db.product
@@ -751,57 +757,57 @@ export default {
           include: [{ model: db.productphoto }],
         })
         .then((count) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.product
             .findAll({
-              order: [["createdAt", "DESC"]],
-              attributes: ["id", "name"],
+              order: [['createdAt', 'DESC']],
+              attributes: ['id', 'name'],
               limit: limit,
               offset: offset,
               include: [
                 {
                   model: db.productphoto,
-                  attributes: ["id", "imgUrl"],
+                  attributes: ['id', 'imgUrl'],
                   limit: limit,
                 },
               ],
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
-          res.status(200).json({ data: list, count: count, pages: pages });
+          res.status(200).json({ data: list, count: count, pages: pages })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async getAllPhotoById(req, res, next) {
-    const { id } = req.body;
-    let whereCond = {};
+    const { id } = req.body
+    let whereCond = {}
     if (id) {
-      whereCond = { id: id };
+      whereCond = { id: id }
     }
     try {
       db.product
         .findAll({
           where: whereCond,
-          order: [["createdAt", "DESC"]],
-          attributes: ["id", "name"],
-          include: [{ model: db.productphoto, attributes: ["id", "imgUrl"] }],
+          order: [['createdAt', 'DESC']],
+          attributes: ['id', 'name'],
+          include: [{ model: db.productphoto, attributes: ['id', 'imgUrl'] }],
         })
         .then((data) => {
-          res.status(200).json({ success: true, data });
+          res.status(200).json({ success: true, data })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
@@ -810,63 +816,63 @@ export default {
       .findOne({ where: { id: parseInt(req.query.id) } })
       .then((product) => {
         if (product) {
-          return db.productphoto.destroy({ where: { id: req.query.id } });
+          return db.productphoto.destroy({ where: { id: req.query.id } })
         }
-        throw new RequestError("Product is not found");
+        throw new RequestError('Product is not found')
       })
       .then((re) => {
-        return res.status(200).json({ status: "deleted Product Seccessfully" });
+        return res.status(200).json({ status: 'deleted Product Seccessfully' })
       })
       .catch((err) => {
-        next(err);
-      });
+        next(err)
+      })
   },
   //All GroceryStample product
   async getAllGrocerryStaples(req, res, next) {
-    let limit = 50;
-    let offset = 0;
-    let page = 1;
+    let limit = 50
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
       db.category
         .count({
-          attributes: ["id", "slug"],
-          where: { slug: "grocery-staples" },
+          attributes: ['id', 'slug'],
+          where: { slug: 'grocery-staples' },
           include: [
             {
               model: db.product,
-              order: [["createdAt", "DESC"]],
-              where: { status: "active" },
+              order: [['createdAt', 'DESC']],
+              where: { status: 'active' },
               include: [
-                { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                { model: db.productphoto, attributes: ['id', 'imgUrl'] },
               ],
             },
           ],
         })
         .then((count) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.category
             .findOne({
-              attributes: ["id", "slug"],
-              where: { slug: "grocery-staples" },
+              attributes: ['id', 'slug'],
+              where: { slug: 'grocery-staples' },
               include: [
                 {
                   model: db.product,
-                  order: [["createdAt", "DESC"]],
+                  order: [['createdAt', 'DESC']],
                   limit: limit,
                   offset: offset,
-                  where: { status: "active" },
+                  where: { status: 'active' },
                   include: [
                     {
                       model: db.productphoto,
-                      attributes: ["id", "imgUrl"],
+                      attributes: ['id', 'imgUrl'],
                       limit: limit,
                       offset: offset,
                     },
@@ -875,67 +881,67 @@ export default {
                 },
               ],
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
-          res.status(200).json({ data: list, count: count, pages: pages });
+          res.status(200).json({ data: list, count: count, pages: pages })
         })
         .catch(function (err) {
-          console.log("some error", err);
-          next(err);
-        });
+          console.log('some error', err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   //All PersonalCare product
   async getAllPersonalCare(req, res, next) {
-    let limit = 50;
-    let offset = 0;
-    let page = 1;
+    let limit = 50
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
       db.category
         .count({
-          attributes: ["id", "slug"],
-          where: { slug: "personal-care" },
+          attributes: ['id', 'slug'],
+          where: { slug: 'personal-care' },
           include: [
             {
               model: db.product,
-              order: [["createdAt", "DESC"]],
-              where: { status: "active" },
+              order: [['createdAt', 'DESC']],
+              where: { status: 'active' },
               include: [
-                { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                { model: db.productphoto, attributes: ['id', 'imgUrl'] },
                 { model: db.ProductVariant },
               ],
             },
           ],
         })
         .then((count) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.category
             .findOne({
-              attributes: ["id", "slug"],
-              where: { slug: "personal-care" },
+              attributes: ['id', 'slug'],
+              where: { slug: 'personal-care' },
               include: [
                 {
                   model: db.product,
-                  order: [["createdAt", "DESC"]],
+                  order: [['createdAt', 'DESC']],
                   limit: limit,
                   offset: offset,
-                  where: { status: "active" },
+                  where: { status: 'active' },
                   include: [
                     {
                       model: db.productphoto,
-                      attributes: ["id", "imgUrl"],
+                      attributes: ['id', 'imgUrl'],
                       limit: limit,
                       offset: offset,
                     },
@@ -944,67 +950,67 @@ export default {
                 },
               ],
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
-          res.status(200).json({ data: list, count: count, pages: pages });
+          res.status(200).json({ data: list, count: count, pages: pages })
         })
         .catch(function (err) {
-          console.log("some error", err);
-          next(err);
-        });
+          console.log('some error', err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   //All beverages
   async getAllHomeKitchen(req, res, next) {
-    let limit = 50;
-    let offset = 0;
-    let page = 1;
+    let limit = 50
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
       db.category
         .count({
-          attributes: ["id", "slug"],
-          where: { slug: "beverages" },
+          attributes: ['id', 'slug'],
+          where: { slug: 'beverages' },
           include: [
             {
               model: db.product,
-              order: [["createdAt", "DESC"]],
-              where: { status: "active" },
+              order: [['createdAt', 'DESC']],
+              where: { status: 'active' },
               include: [
-                { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                { model: db.productphoto, attributes: ['id', 'imgUrl'] },
                 { model: db.ProductVariant },
               ],
             },
           ],
         })
         .then((count) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.category
             .findOne({
-              attributes: ["id", "slug"],
-              where: { slug: "home-kitchen" },
+              attributes: ['id', 'slug'],
+              where: { slug: 'home-kitchen' },
               include: [
                 {
                   model: db.product,
-                  order: [["createdAt", "DESC"]],
+                  order: [['createdAt', 'DESC']],
                   limit: limit,
                   offset: offset,
-                  where: { status: "active" },
+                  where: { status: 'active' },
                   include: [
                     {
                       model: db.productphoto,
-                      attributes: ["id", "imgUrl"],
+                      attributes: ['id', 'imgUrl'],
                       limit: limit,
                       offset: offset,
                     },
@@ -1013,146 +1019,146 @@ export default {
                 },
               ],
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
-          res.status(200).json({ data: list, count: count, pages: pages });
+          res.status(200).json({ data: list, count: count, pages: pages })
         })
         .catch(function (err) {
-          console.log("some error", err);
-          next(err);
-        });
+          console.log('some error', err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async getAllProductBySlug(req, res, next) {
-    let limit = 50;
-    let offset = 0;
-    let page = 1;
+    let limit = 50
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
-    let { slug } = req.body;
-    let wherecond = {};
+    let { slug } = req.body
+    let wherecond = {}
     if (slug) {
-      wherecond.slug = slug;
+      wherecond.slug = slug
     }
     try {
-      let result = {};
+      let result = {}
       result.category = await db.category.findOne({
         where: wherecond,
-      });
+      })
       result.subcat = await db.SubCategory.findOne({
         where: wherecond,
-      });
+      })
       result.brand = await db.ch_brand_detail.findOne({
         where: wherecond,
-      });
+      })
       if (result.category || result.subcat) {
         db.product
           .count({
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
             where: {
               [Op.or]: [
                 {
                   categoryId: result.category ? result.category.id : null,
-                  status: "active",
+                  status: 'active',
                 },
                 {
                   subCategoryId: result.subcat ? result.subcat.id : null,
-                  status: "active",
+                  status: 'active',
                 },
               ],
             },
             include: [
-              { model: db.productphoto, attributes: ["id", "imgUrl"] },
+              { model: db.productphoto, attributes: ['id', 'imgUrl'] },
               { model: db.ProductVariant },
             ],
             limit: limit,
             offset: offset,
           })
           .then((count) => {
-            let pages = Math.ceil(count / limit);
-            offset = limit * (page - 1);
+            let pages = Math.ceil(count / limit)
+            offset = limit * (page - 1)
             return db.product
               .findAll({
-                order: [["createdAt", "DESC"]],
+                order: [['createdAt', 'DESC']],
                 where: {
                   [Op.or]: [
                     {
                       categoryId: result.category ? result.category.id : null,
-                      status: "active",
+                      status: 'active',
                     },
                     {
                       subCategoryId: result.subcat ? result.subcat.id : null,
-                      status: "active",
+                      status: 'active',
                     },
                   ],
                 },
                 include: [
-                  { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                  { model: db.productphoto, attributes: ['id', 'imgUrl'] },
                   { model: db.ProductVariant },
                 ],
                 limit: limit,
                 offset: offset,
               })
-              .then((r) => [r, pages, count]);
+              .then((r) => [r, pages, count])
           })
           .then(([list, pages, count]) => {
-            res.status(200).json({ data: list, count: count, pages: pages });
+            res.status(200).json({ data: list, count: count, pages: pages })
           })
           .catch(function (err) {
-            console.log("some error", err);
-            next(err);
-          });
+            console.log('some error', err)
+            next(err)
+          })
       }
       if (result.brand) {
         db.product
           .count({
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
             where: {
               brandId: result.brand.id,
             },
             include: [
-              { model: db.productphoto, attributes: ["id", "imgUrl"] },
+              { model: db.productphoto, attributes: ['id', 'imgUrl'] },
               { model: db.ProductVariant },
             ],
             limit: limit,
             offset: offset,
           })
           .then((count) => {
-            let pages = Math.ceil(count / limit);
-            offset = limit * (page - 1);
+            let pages = Math.ceil(count / limit)
+            offset = limit * (page - 1)
             return db.product
               .findAll({
-                order: [["createdAt", "DESC"]],
+                order: [['createdAt', 'DESC']],
                 where: {
                   brandId: result.brand.id,
                 },
                 include: [
-                  { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                  { model: db.productphoto, attributes: ['id', 'imgUrl'] },
                   { model: db.ProductVariant },
                 ],
                 limit: limit,
                 offset: offset,
               })
-              .then((r) => [r, pages, count]);
+              .then((r) => [r, pages, count])
           })
           .then(([list, pages, count]) => {
-            res.status(200).json({ data: list, count: count, pages: pages });
+            res.status(200).json({ data: list, count: count, pages: pages })
           })
           .catch(function (err) {
-            next(err);
-          });
+            next(err)
+          })
       }
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
@@ -1160,36 +1166,36 @@ export default {
 
   async getFilterbyProduct(req, res, next) {
     try {
-      let search = "%%";
+      let search = '%%'
       if (req.query.search) {
-        search = "%" + req.query.search + "%";
+        search = '%' + req.query.search + '%'
       }
-      let result = {};
+      let result = {}
       result.maincat = await db.category.findOne({
         where: { name: { [Op.like]: search } },
-      });
+      })
       result.subchild = await db.SubChildCategory.findOne({
         where: { name: { [Op.like]: search } },
-      });
+      })
 
       result.subcat = await db.SubCategory.findOne({
         where: { sub_name: { [Op.like]: search } },
-      });
+      })
 
       result.brand = await db.ch_brand_detail.findOne({
         where: { name: { [Op.like]: search } },
-      });
+      })
 
       result.item = await db.product.findOne({
         where: { name: { [Op.like]: search } },
-      });
+      })
 
       if (result.maincat) {
         db.product
           .findAll({
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
             where: {
-              status: { [Op.eq]: "active" },
+              status: { [Op.eq]: 'active' },
               categoryId: result.maincat.id,
             },
             include: [{ model: db.ProductVariant }, { model: db.productphoto }],
@@ -1202,32 +1208,32 @@ export default {
                 include: [
                   {
                     model: db.SubCategory,
-                    attributes: ["id", "sub_name"],
+                    attributes: ['id', 'sub_name'],
                     include: [
                       {
                         model: db.SubChildCategory,
-                        attributes: ["id", "name", "subcategoryId"],
+                        attributes: ['id', 'name', 'subcategoryId'],
                       },
                     ],
                   },
                 ],
               })
-              .then((category) => [product, category]);
+              .then((category) => [product, category])
           })
           .then(([product, category]) => {
             res
               .status(200)
-              .json({ success: true, data: product, category: category });
+              .json({ success: true, data: product, category: category })
           })
           .catch(function (err) {
-            next(err);
-          });
+            next(err)
+          })
       } else if (result.subcat) {
         db.product
           .findAll({
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
             where: {
-              status: { [Op.eq]: "active" },
+              status: { [Op.eq]: 'active' },
               subcategoryId: result.subcat.id,
             },
             include: [{ model: db.ProductVariant }, { model: db.productphoto }],
@@ -1243,33 +1249,33 @@ export default {
                       // status: { [Op.eq]: 'active' },
                       id: result.subcat.id,
                     },
-                    attributes: ["id", "sub_name"],
+                    attributes: ['id', 'sub_name'],
                     include: [
                       {
                         model: db.SubChildCategory,
-                        attributes: ["id", "name", "subcategoryId"],
+                        attributes: ['id', 'name', 'subcategoryId'],
                       },
                     ],
                   },
                 ],
               })
-              .then((category) => [product, category]);
+              .then((category) => [product, category])
           })
           .then(([product, category]) => {
             res
               .status(200)
-              .json({ success: true, data: product, category: category });
+              .json({ success: true, data: product, category: category })
           })
           .catch(function (err) {
-            console.log(err);
-            next(err);
-          });
+            console.log(err)
+            next(err)
+          })
       } else if (result.brand) {
         db.product
           .findAll({
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
             where: {
-              status: { [Op.eq]: "active" },
+              status: { [Op.eq]: 'active' },
               brandId: result.brand.id,
             },
             include: [{ model: db.ProductVariant }, { model: db.productphoto }],
@@ -1281,17 +1287,17 @@ export default {
                 include: [
                   {
                     model: db.SubCategory,
-                    attributes: ["id", "sub_name"],
+                    attributes: ['id', 'sub_name'],
                     include: [
                       {
                         model: db.SubChildCategory,
-                        attributes: ["id", "name", "subcategoryId"],
+                        attributes: ['id', 'name', 'subcategoryId'],
                       },
                     ],
                   },
                 ],
               })
-              .then((category) => [product, category]);
+              .then((category) => [product, category])
           })
           .then(([product, category]) => {
             res.status(200).json({
@@ -1299,17 +1305,17 @@ export default {
               data: product,
               category: category,
               brand: result.brand,
-            });
+            })
           })
           .catch(function (err) {
-            console.log(err);
-            next(err);
-          });
+            console.log(err)
+            next(err)
+          })
       } else if (result.subchild) {
         db.product
           .findAll({
             where: {
-              status: { [Op.eq]: "active" },
+              status: { [Op.eq]: 'active' },
               childCategoryId: result.subchild.id,
             },
             include: [{ model: db.ProductVariant }, { model: db.productphoto }],
@@ -1321,7 +1327,7 @@ export default {
                 include: [
                   {
                     model: db.SubCategory,
-                    attributes: ["id", "sub_name"],
+                    attributes: ['id', 'sub_name'],
                     include: [
                       {
                         model: db.SubChildCategory,
@@ -1329,29 +1335,29 @@ export default {
                           // status: { [Op.eq]: 'active' },
                           id: result.subchild.id,
                         },
-                        attributes: ["id", "name", "subcategoryId"],
+                        attributes: ['id', 'name', 'subcategoryId'],
                       },
                     ],
                   },
                 ],
               })
-              .then((category) => [product, category]);
+              .then((category) => [product, category])
           })
           .then(([product, category]) => {
             res
               .status(200)
-              .json({ success: true, data: product, category: category });
+              .json({ success: true, data: product, category: category })
           })
           .catch(function (err) {
-            console.log(err);
-            next(err);
-          });
+            console.log(err)
+            next(err)
+          })
       } else {
         db.product
           .findAll({
-            order: [["createdAt", "DESC"]],
+            order: [['createdAt', 'DESC']],
             where: {
-              status: { [Op.eq]: "active" },
+              status: { [Op.eq]: 'active' },
               id: result.item.id,
             },
             include: [{ model: db.ProductVariant }, { model: db.productphoto }],
@@ -1363,31 +1369,31 @@ export default {
                 include: [
                   {
                     model: db.SubCategory,
-                    attributes: ["id", "sub_name"],
+                    attributes: ['id', 'sub_name'],
                     include: [
                       {
                         model: db.SubChildCategory,
-                        attributes: ["id", "name", "subcategoryId"],
+                        attributes: ['id', 'name', 'subcategoryId'],
                       },
                     ],
                   },
                 ],
               })
-              .then((category) => [product, category]);
+              .then((category) => [product, category])
           })
           .then(([product, category]) => {
             res
               .status(200)
-              .json({ success: true, data: product, category: category });
+              .json({ success: true, data: product, category: category })
           })
           .catch(function (err) {
-            console.log(err);
-            next(err);
-          });
+            console.log(err)
+            next(err)
+          })
       }
     } catch (err) {
-      console.log(err);
-      throw new RequestError("Error");
+      console.log(err)
+      throw new RequestError('Error')
     }
   },
 
@@ -1399,10 +1405,10 @@ export default {
         include: [
           {
             model: db.product,
-            order: [["createdAt", "DESC"]],
-            where: { status: "active" },
+            order: [['createdAt', 'DESC']],
+            where: { status: 'active' },
             include: [
-              { model: db.productphoto, attributes: ["id", "imgUrl"] },
+              { model: db.productphoto, attributes: ['id', 'imgUrl'] },
               { model: db.ProductVariant },
             ],
           },
@@ -1415,53 +1421,53 @@ export default {
             include: [
               {
                 model: db.SubChildCategory,
-                attributes: ["id", "name", "subCategoryId"],
+                attributes: ['id', 'name', 'subCategoryId'],
               },
             ],
-          }).then((r) => [product, r]);
+          }).then((r) => [product, r])
         })
         .then(([product, r]) => {
-          res.status(200).json({ success: true, data: product, category: r });
+          res.status(200).json({ success: true, data: product, category: r })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   // aws image delete
   async awsProductPhotoDelete(req, res, next) {
     try {
-      const { id, imgUrl } = req.body;
+      const { id, imgUrl } = req.body
       deleteFileFromS3(imgUrl)
         .then((data) => {
           if (!data) {
-            return db.productphoto.destroy({ where: { id: id } });
+            return db.productphoto.destroy({ where: { id: id } })
           }
-          throw new RequestError("error");
+          throw new RequestError('error')
         })
         .then((success) => {
           res.status(200).json({
             success: true,
-            message: "Successflly deleted image from s3 Bucket",
-          });
-        });
+            message: 'Successflly deleted image from s3 Bucket',
+          })
+        })
     } catch (err) {
-      next(err);
+      next(err)
     }
   },
   async relatedProduct(req, res, next) {
-    let limit = 100;
-    let offset = 0;
-    let page = 1;
+    let limit = 100
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
       db.product
@@ -1474,49 +1480,49 @@ export default {
               .count({
                 where: {
                   childCategoryId: list.childCategoryId,
-                  status: "active",
+                  status: 'active',
                 },
               })
-              .then((count) => [count, list]);
+              .then((count) => [count, list])
           }
         })
         .then(([count, list]) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.product
             .findAll({
               where: {
                 childCategoryId: list.childCategoryId,
-                status: "active",
+                status: 'active',
               },
               include: [
                 { model: db.ProductVariant },
                 { model: db.productphoto },
               ],
               order: [
-                ["id", "DESC"],
-                ["name", "ASC"],
+                ['id', 'DESC'],
+                ['name', 'ASC'],
               ],
               limit: limit,
               offset: offset,
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
-          res.status(200).json({ data: list, count: count, pages: pages });
+          res.status(200).json({ data: list, count: count, pages: pages })
         })
         .catch(function (err) {
-          console.log("some error", err);
-          next(err);
-        });
+          console.log('some error', err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async statusUpdate(req, res, next) {
     try {
-      const { productId, PubilshStatus } = req.body;
+      const { productId, PubilshStatus } = req.body
       db.product
         .findOne({ where: { id: productId } })
         .then((product) => {
@@ -1525,28 +1531,28 @@ export default {
               {
                 PubilshStatus: PubilshStatus,
               },
-              { where: { id: productId } }
-            );
+              { where: { id: productId } },
+            )
           } else {
-            throw new RequestError("Not found product", 409);
+            throw new RequestError('Not found product', 409)
           }
         })
         .then((p) => {
           res
             .status(200)
-            .json({ success: true, message: "Status Updated Successfully" });
+            .json({ success: true, message: 'Status Updated Successfully' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
   async stockUpdate(req, res, next) {
     try {
-      const { id, Available } = req.body;
+      const { id, Available } = req.body
       db.ProductVariant.findOne({ where: { id: id } })
         .then(async (product) => {
           if (product) {
@@ -1554,27 +1560,27 @@ export default {
               {
                 Available: Available,
               },
-              { where: { id: id } }
-            );
+              { where: { id: id } },
+            )
           }
         })
         .then((p) => {
           res
             .status(200)
-            .json({ success: true, msg: "Status Updated Successfully" });
+            .json({ success: true, msg: 'Status Updated Successfully' })
         })
         .catch(function (err) {
-          console.log(err);
-          next(err);
-        });
+          console.log(err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
   async bannerUpload(req, res, next) {
     try {
-      const { id, slug, status, type } = req.body;
+      const { id, slug, status, type } = req.body
       db.BannerDetail.findOne({ where: { id: id || null } })
         .then(async (data) => {
           if (data) {
@@ -1586,27 +1592,27 @@ export default {
                 banner: req.file ? req.file.location : data.banner,
                 type: type,
               },
-              { where: { id: id } }
-            );
+              { where: { id: id } },
+            )
           } else {
             return db.BannerDetail.create({
               slug: slug,
               status: 0,
               type: type,
               banner: req.file ? req.file.location : product.photo,
-            });
+            })
           }
         })
         .then((p) => {
           res
             .status(200)
-            .json({ success: true, message: "Banner Uploaded Successfully" });
+            .json({ success: true, message: 'Banner Uploaded Successfully' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(error);
+      throw new RequestError(error)
     }
   },
 
@@ -1616,13 +1622,13 @@ export default {
         where: { status: 1 },
       })
         .then((list) => {
-          res.status(200).json({ success: true, data: list });
+          res.status(200).json({ success: true, data: list })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
@@ -1630,20 +1636,20 @@ export default {
     try {
       db.BannerDetail.findAll()
         .then((list) => {
-          res.status(200).json({ success: true, data: list });
+          res.status(200).json({ success: true, data: list })
         })
         .catch(function (err) {
-          console.log("==>", err);
-          next(err);
-        });
+          console.log('==>', err)
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async bannerStatus(req, res, next) {
     try {
-      const { id, status } = req.body;
+      const { id, status } = req.body
 
       db.BannerDetail.findOne({ where: { id: id } })
         .then(async (data) => {
@@ -1652,46 +1658,46 @@ export default {
               {
                 status: status,
               },
-              { where: { id: id } }
-            );
+              { where: { id: id } },
+            )
           }
         })
         .then((p) => {
           res
             .status(200)
-            .json({ success: true, msg: "Banner Uploaded Successfully" });
+            .json({ success: true, msg: 'Banner Uploaded Successfully' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async bannerListDelete(req, res, next) {
     try {
-      const { id, banner } = req.body;
+      const { id, banner } = req.body
       deleteFileFromS3(banner)
         .then((data) => {
           if (!data) {
-            return db.BannerDetail.destroy({ where: { id: id } });
+            return db.BannerDetail.destroy({ where: { id: id } })
           }
-          throw new RequestError("error");
+          throw new RequestError('error')
         })
         .then((success) => {
           res.status(200).json({
             success: true,
-            msg: "Successflly deleted image from s3 Bucket",
-          });
-        });
+            msg: 'Successflly deleted image from s3 Bucket',
+          })
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async seoDetailsList(req, res, next) {
-    const { productId, title, keyword, description } = req.body;
+    const { productId, title, keyword, description } = req.body
     try {
       db.Seo_Details.findOne({ where: { meta_title: title } })
         .then((list) => {
@@ -1701,7 +1707,7 @@ export default {
               meta_title: title,
               meta_desc: description,
               meta_keyword: keyword,
-            });
+            })
           } else {
             return db.Seo_Details.update(
               {
@@ -1710,33 +1716,33 @@ export default {
                 meta_desc: description,
                 meta_keyword: keyword,
               },
-              { where: { id: id } }
-            );
+              { where: { id: id } },
+            )
           }
         })
         .then((success) => {
           res.status(200).json({
             success: true,
-            msg: "Successflly deleted image from s3 Bucket",
-          });
+            msg: 'Successflly deleted image from s3 Bucket',
+          })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      console.log("==>", err);
-      throw new RequestError("Error");
+      console.log('==>', err)
+      throw new RequestError('Error')
     }
   },
 
   // brand details
   async createBrandDetails(req, res, next) {
-    const { id, name, slug, title, keyword, desc } = req.body;
+    const { id, name, slug, title, keyword, desc } = req.body
     try {
       db.ch_brand_detail
         .findOne({ where: { name: name } })
         .then((list) => {
-          let code = "BR" + Math.random().toString(36).substr(2, 4);
+          let code = 'BR' + Math.random().toString(36).substr(2, 4)
           if (!list) {
             return db.ch_brand_detail.create({
               name: name,
@@ -1746,7 +1752,7 @@ export default {
               title: title,
               keyword: keyword,
               desc: desc,
-            });
+            })
           } else {
             return db.ch_brand_detail.update(
               {
@@ -1758,25 +1764,25 @@ export default {
                 keyword: keyword ? keyword : list.keyword,
                 desc: desc ? desc : list.desc,
               },
-              { where: { id: id } }
-            );
+              { where: { id: id } },
+            )
           }
         })
         .then((success) => {
           res
             .status(200)
-            .json({ success: true, msg: "Successflly added in list" });
+            .json({ success: true, msg: 'Successflly added in list' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
   async updateBrandDetails(req, res, next) {
-    const { id, name, slug, title, keyword, desc } = req.body;
+    const { id, name, slug, title, keyword, desc } = req.body
     try {
       db.ch_brand_detail
         .findOne({ where: { id: id } })
@@ -1791,76 +1797,76 @@ export default {
               keyword: keyword ? keyword : list.keyword,
               desc: desc ? desc : list.desc,
             },
-            { where: { id: id } }
-          );
+            { where: { id: id } },
+          )
         })
         .then((success) => {
           var response = Util.getFormatedResponse(false, {
-            message: "Success updated",
-          });
-          res.status(response.code).json(response);
+            message: 'Success updated',
+          })
+          res.status(response.code).json(response)
         })
         .catch(function (err) {
           var response = Util.getFormatedResponse(true, {
             message: err,
-          });
-          res.status(response.code).json(response);
-        });
+          })
+          res.status(response.code).json(response)
+        })
     } catch (err) {
       var response = Util.getFormatedResponse(true, {
         message: err,
-      });
-      res.status(response.code).json(response);
+      })
+      res.status(response.code).json(response)
     }
   },
 
   async getAllBrandList(req, res, next) {
-    const { search_text } = req.body;
-    let limit = 20;
-    let offset = 0;
-    let page = 1;
+    const { search_text } = req.body
+    let limit = 20
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
-      let whereCond = {};
+      let whereCond = {}
       if (search_text) {
         whereCond = {
           [Op.or]: [
             {
               name: {
-                [Op.like]: "%" + search_text + "%",
+                [Op.like]: '%' + search_text + '%',
               },
             },
             {
               slug: {
-                [Op.like]: "%" + search_text + "%",
+                [Op.like]: '%' + search_text + '%',
               },
             },
           ],
-        };
+        }
       }
       db.ch_brand_detail
-        .count({ where: whereCond, order: [["createdAt", "DESC"]] })
+        .count({ where: whereCond, order: [['createdAt', 'DESC']] })
         .then((count) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.ch_brand_detail
             .findAll({
               where: whereCond,
-              order: [["createdAt", "DESC"]],
+              order: [['createdAt', 'DESC']],
               order: [
-                ["id", "DESC"],
-                ["name", "ASC"],
+                ['id', 'DESC'],
+                ['name', 'ASC'],
               ],
               limit: limit,
               offset: offset,
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
           res.status(200).json({
@@ -1869,59 +1875,59 @@ export default {
             count: count,
             pages: pages,
             page: req.body.page,
-          });
+          })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
   async brandListDelete(req, res, next) {
     try {
-      const { id } = req.body;
+      const { id } = req.body
       db.ch_brand_detail
         .findOne({ where: { id: id } })
         .then((data) => {
           if (data) {
-            return db.ch_brand_detail.destroy({ where: { id: id } });
+            return db.ch_brand_detail.destroy({ where: { id: id } })
           }
-          throw new RequestError("error");
+          throw new RequestError('error')
         })
         .then((success) => {
-          res.status(200).json({ success: true, msg: "Successflly deleted" });
-        });
+          res.status(200).json({ success: true, msg: 'Successflly deleted' })
+        })
     } catch (err) {
-      throw new RequestError("Error");
+      throw new RequestError('Error')
     }
   },
 
   async filtershortby(req, res, next) {
-    let limit = 50;
-    let offset = 0;
-    let page = 1;
-    let sortbason;
+    let limit = 50
+    let offset = 0
+    let page = 1
+    let sortbason
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
-    let data = req.body;
+    let data = req.body
 
-    sortbason = data.sortbasedon;
-    let cond;
-    if (sortbason === "1") {
-      cond = ["netPrice", "ASC"];
-    } else if (sortbason === "2") {
-      cond = ["netPrice", "DESC"];
-    } else if (sortbason === "3") {
-      cond = ["productName", "DESC"];
-    } else if (sortbason === "4") {
-      cond = ["createdAt", "DESC"];
+    sortbason = data.sortbasedon
+    let cond
+    if (sortbason === '1') {
+      cond = ['netPrice', 'ASC']
+    } else if (sortbason === '2') {
+      cond = ['netPrice', 'DESC']
+    } else if (sortbason === '3') {
+      cond = ['productName', 'DESC']
+    } else if (sortbason === '4') {
+      cond = ['createdAt', 'DESC']
     }
     // console.log(cond)
     try {
@@ -1933,9 +1939,9 @@ export default {
           db.product
             .count({
               // subQuery:false,
-              where: { categoryId: cat.id, status: "active" },
+              where: { categoryId: cat.id, status: 'active' },
               include: [
-                { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                { model: db.productphoto, attributes: ['id', 'imgUrl'] },
                 {
                   model: db.ProductVariant,
                   separate: true,
@@ -1946,14 +1952,14 @@ export default {
               offset: offset,
             })
             .then((count) => {
-              let pages = Math.ceil(count / limit);
-              offset = limit * (page - 1);
+              let pages = Math.ceil(count / limit)
+              offset = limit * (page - 1)
               return db.product
                 .findAll({
                   // subQuery:false,
-                  where: { categoryId: cat.id, status: "active" },
+                  where: { categoryId: cat.id, status: 'active' },
                   include: [
-                    { model: db.productphoto, attributes: ["id", "imgUrl"] },
+                    { model: db.productphoto, attributes: ['id', 'imgUrl'] },
                     {
                       model: db.ProductVariant,
                       separate: true,
@@ -1963,24 +1969,24 @@ export default {
                   limit: limit,
                   offset: offset,
                 })
-                .then((r) => [r, pages, count]);
+                .then((r) => [r, pages, count])
             })
             .then(([list, pages, count]) => {
-              res.status(200).json({ data: list, count: count, pages: pages });
+              res.status(200).json({ data: list, count: count, pages: pages })
             })
             .catch(function (err) {
-              console.log(err);
-              res.status(500).json({ success: false, error: err });
-            });
-        });
+              console.log(err)
+              res.status(500).json({ success: false, error: err })
+            })
+        })
     } catch (err) {
-      console.log("new error", err);
-      res.status(500).json({ success: false, error: err });
+      console.log('new error', err)
+      res.status(500).json({ success: false, error: err })
     }
   },
   // color details
   async createColorDetails(req, res, next) {
-    const { name, code } = req.body;
+    const { name, code } = req.body
     try {
       db.ch_brand_detail
         .findOne({ where: { name: name } })
@@ -1990,60 +1996,60 @@ export default {
               TITLE: name,
               STATUS: 1,
               CODE: code,
-            });
+            })
           }
-          return true;
+          return true
         })
         .then((success) => {
           res
             .status(200)
-            .json({ status: 200, message: "Succesffully added in list" });
+            .json({ status: 200, message: 'Succesffully added in list' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async getColorList(req, res, next) {
-    const { search_text } = req.body;
-    let limit = 20;
-    let offset = 0;
-    let page = 1;
+    const { search_text } = req.body
+    let limit = 20
+    let offset = 0
+    let page = 1
     if (req.body.limit != undefined) {
-      limit = parseInt(req.body.limit);
+      limit = parseInt(req.body.limit)
     }
     if (req.body.page) {
-      page = req.body.page;
-      if (page < 1) page = 1;
+      page = req.body.page
+      if (page < 1) page = 1
     }
     try {
-      let whereCond = {};
+      let whereCond = {}
       if (search_text) {
         whereCond = {
           TITLE: {
-            [Op.like]: "%" + search_text + "%",
+            [Op.like]: '%' + search_text + '%',
           },
-        };
+        }
       }
       db.ch_color_detail
-        .count({ where: whereCond, order: [["createdAt", "DESC"]] })
+        .count({ where: whereCond, order: [['createdAt', 'DESC']] })
         .then((count) => {
-          let pages = Math.ceil(count / limit);
-          offset = limit * (page - 1);
+          let pages = Math.ceil(count / limit)
+          offset = limit * (page - 1)
           return db.ch_color_detail
             .findAll({
               where: whereCond,
-              order: [["createdAt", "DESC"]],
+              order: [['createdAt', 'DESC']],
               order: [
-                ["id", "DESC"],
-                ["TITLE", "ASC"],
+                ['id', 'DESC'],
+                ['TITLE', 'ASC'],
               ],
               limit: limit,
               offset: offset,
             })
-            .then((r) => [r, pages, count]);
+            .then((r) => [r, pages, count])
         })
         .then(([list, pages, count]) => {
           res.status(200).json({
@@ -2052,40 +2058,40 @@ export default {
             count: count,
             pages: pages,
             page: req.body.page,
-          });
+          })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async deleteColorById(req, res, next) {
     try {
-      const { id } = req.query;
+      const { id } = req.query
       db.ch_color_detail
         .findOne({ where: { id: id } })
         .then((data) => {
           if (data) {
-            return db.ch_color_detail.destroy({ where: { id: id } });
+            return db.ch_color_detail.destroy({ where: { id: id } })
           }
-          throw new RequestError("data is not found");
+          throw new RequestError('data is not found')
         })
         .then((success) => {
           res.status(200).json({
             status: 200,
             success: true,
-            message: "Successflly deleted",
-          });
-        });
+            message: 'Successflly deleted',
+          })
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async productColourCreate(req, res, next) {
     try {
-      const { code, title } = req.body;
+      const { code, title } = req.body
       db.ch_color_detail
         .findOne({ where: { TITLE: title } })
         .then((data) => {
@@ -2094,20 +2100,20 @@ export default {
               CODE: code,
               TITLE: title,
               STATUS: true,
-            });
+            })
           }
-          throw new RequestError("already exist in list");
+          throw new RequestError('already exist in list')
         })
         .then((success) => {
           res
             .status(200)
-            .json({ status: 200, success: true, message: "Successflly added" });
+            .json({ status: 200, success: true, message: 'Successflly added' })
         })
         .catch((err) => {
-          throw new RequestError(err);
-        });
+          throw new RequestError(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async productColourList(req, res, next) {
@@ -2120,15 +2126,15 @@ export default {
           res.status(200).json({
             status: 200,
             success: true,
-            message: "Successflly",
+            message: 'Successflly',
             data: success,
-          });
+          })
         })
         .catch((err) => {
-          throw new RequestError(err);
-        });
+          throw new RequestError(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
-};
+}

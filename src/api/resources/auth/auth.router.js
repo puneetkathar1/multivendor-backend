@@ -1,12 +1,12 @@
 import express from "express";
-import authController from "./auth.controller";
+import authController from "./auth.controller.js";
 import {
   sellerStrategy,
   localStrategy,
   jwtStrategy,
-} from "../../../middleware/strategy";
-import { sanitize } from "../../../middleware/sanitizer";
-import { validateBody, schemas } from "../../../middleware/validator";
+} from "../../../middleware/strategy.js";
+import { sanitize } from "../../../middleware/sanitizer.js";
+import { validateBody, schemas } from "../../../middleware/validator.js";
 
 export const authRouter = express.Router();
 authRouter

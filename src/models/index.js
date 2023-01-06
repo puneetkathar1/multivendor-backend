@@ -1,7 +1,7 @@
 import { readdirSync } from 'fs';
 import { basename as _basename, join } from 'path';
 import Sequelize from 'sequelize';
-import config from '../config';
+import config from '../config/index.js';
 const basename = _basename(__filename);
 const db = {};
 

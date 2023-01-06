@@ -1,10 +1,10 @@
 import express from "express";
-import sellerController from "./seller.controller";
-import { sanitize } from "../../../middleware/sanitizer";
-import { jwtStrategy } from "../../../middleware/strategy";
-import upload from "../../../awsbucket";
+import sellerController from "./seller.controller.js";
+import { sanitize } from "../../../middleware/sanitizer.js";
+import { jwtStrategy } from "../../../middleware/strategy.js";
+import upload from "../../../awsbucket.js";
 
-import { validateBody, schemas } from "../../../middleware/validator";
+import { validateBody, schemas } from "../../../middleware/validator.js";
 export const sellerRouter = express.Router();
 
 sellerRouter

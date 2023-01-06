@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import expressSanitizer from "express-sanitizer";
 import helmet from "helmet";
 import rfs from "rotating-file-stream";
-import "./passport";
+import "./passport.js";
 
 export default {
   setup: (config) => {

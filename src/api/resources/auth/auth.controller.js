@@ -1,11 +1,11 @@
-import { db } from "../../../models";
-import JWT from "jsonwebtoken";
-import mailer from "../../../mailer";
-import config from "../../../config";
-import bcrypt from "bcrypt-nodejs";
-import speakeasy from "speakeasy";
-const { Op } = require("sequelize");
-var Util = require("../../../helpers/Util");
+import { db } from '../../../models/index.js'
+import JWT from 'jsonwebtoken'
+import mailer from '../../../mailer.js'
+import config from '../../../config/index.js'
+import bcrypt from 'bcrypt-nodejs'
+import speakeasy from 'speakeasy'
+const { Op } = require('sequelize')
+var Util = require('../../../helpers/Util')
 
 var JWTSign = function (user, date) {
   return JWT.sign(
@@ -16,28 +16,28 @@ var JWTSign = function (user, date) {
       iat: date.getTime(),
       exp: new Date().setDate(date.getDate() + 2),
     },
-    config.app.secret
-  );
-};
+    config.app.secret,
+  )
+}
 
 function generateOtp() {
   let token = speakeasy.totp({
     secret: process.env.OTP_KEY,
-    encoding: "base32",
+    encoding: 'base32',
     step: 30 - Math.floor((new Date().getTime() / 1000.0) % 30),
-  });
-  return token;
+  })
+  return token
 }
 
 function verifyOtp(token) {
   let expiry = speakeasy.totp.verify({
     secret: process.env.OTP_KEY,
-    encoding: "base32",
+    encoding: 'base32',
     token: token,
     step: 30 - Math.floor((new Date().getTime() / 1000.0) % 30),
     window: 0,
-  });
-  return expiry;
+  })
+  return expiry
 }
 
 export default {
@@ -51,15 +51,15 @@ export default {
       password,
       role,
       verify,
-    } = req.body;
-    var passwordHash = bcrypt.hashSync(password);
-    var token = generateOtp();
-    var otp = verifyOtp(token);
+    } = req.body
+    var passwordHash = bcrypt.hashSync(password)
+    var token = generateOtp()
+    var otp = verifyOtp(token)
     db.user
       .findOne({ where: { email: email, role: role }, paranoid: false })
       .then((find) => {
         if (find) {
-          throw new RequestError("Email is already in use", 409);
+          throw new RequestError('Email is already in use', 409)
         }
         return db.user.create({
           firstName: firstName,
@@ -70,60 +70,60 @@ export default {
           password: passwordHash,
           verify: verify,
           role: role,
-        });
+        })
       })
       .then((user) => {
         if (user) {
-          mailer.sendEmployeePassword(email, token);
+          mailer.sendEmployeePassword(email, token)
           return res.status(200).json({
             success: true,
             key: otp,
             message:
-              "New Registration added and password has been sent to " +
+              'New Registration added and password has been sent to ' +
               email +
-              " .",
-          });
-        } else res.status(500).json({ success: false });
+              ' .',
+          })
+        } else res.status(500).json({ success: false })
       })
       .catch((err) => {
-        console.log(err);
-        next(err);
-      });
+        console.log(err)
+        next(err)
+      })
   },
 
   async findUser(req, res, next) {
     db.user
       .findOne({
-        attributes: ["firstName", "lastName"],
+        attributes: ['firstName', 'lastName'],
         where: { email: req.query.email },
         paranoid: false,
       })
       .then((user) => {
         if (user) {
-          return res.status(200).json({ success: true, data: user });
-        } else res.status(500).json({ success: false });
+          return res.status(200).json({ success: true, data: user })
+        } else res.status(500).json({ success: false })
       })
       .catch((err) => {
-        console.log(err);
-        next(err);
-      });
+        console.log(err)
+        next(err)
+      })
   },
 
   async getAllUserList(req, res, next) {
-    const { searchString } = req.query;
-    const query = {};
-    query.where = {};
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
-    const page = req.query.page ? Number(req.query.page) : 1;
-    query.limit = limit;
-    query.offset = limit * (page - 1);
-    query.order = [["createdAt", "DESC"]];
+    const { searchString } = req.query
+    const query = {}
+    query.where = {}
+    const limit = req.query.limit ? Number(req.query.limit) : 10
+    const page = req.query.page ? Number(req.query.page) : 1
+    query.limit = limit
+    query.offset = limit * (page - 1)
+    query.order = [['createdAt', 'DESC']]
     if (searchString) {
       query.where = {
         [Op.or]: [
           {
             firstName: {
-              [Op.like]: "%" + searchString + "%",
+              [Op.like]: '%' + searchString + '%',
             },
           },
           {
@@ -131,66 +131,74 @@ export default {
           },
           {
             role: {
-              [Op.like]: "%" + searchString + "%",
+              [Op.like]: '%' + searchString + '%',
             },
           },
         ],
-      };
+      }
     }
     db.user
       .findAndCountAll(query)
       .then((list) => {
-        let pages = Math.ceil(list.count / limit);
+        let pages = Math.ceil(list.count / limit)
         const finalResult = {
           count: list.count,
           pages: pages,
           page: req.query.page,
           items: list.rows,
-        };
+        }
         var response = Util.getFormatedResponse(false, finalResult, {
-          message: "Success",
-        });
-        res.status(response.code).json(response);
+          message: 'Success',
+        })
+        res.status(response.code).json(response)
       })
       .catch((err) => {
-        next(err);
-      });
+        next(err)
+      })
   },
 
   async getSellerUser(req, res, next) {
     db.user
       .findOne({
         attributes: [
-          "id",
-          "email",
-          "firstName",
-          "lastName",
-          "phone",
-          "address",
-          "role",
+          'id',
+          'email',
+          'firstName',
+          'lastName',
+          'phone',
+          'address',
+          'role',
         ],
         where: { email: req.user.email, role: req.user.role },
       })
       .then((user) => {
         if (user) {
-          return res.status(200).json({ success: true, data: user });
-        } else res.status(500).json({ success: false });
+          return res.status(200).json({ success: true, data: user })
+        } else res.status(500).json({ success: false })
       })
       .catch((err) => {
-        console.log(err);
-        next(err);
-      });
+        console.log(err)
+        next(err)
+      })
   },
 
   async userUpdate(req, res, next) {
-    const { id, firstName, lastName, email, address, password, role, verify } =
-      req.body;
-    var passwordHash = bcrypt.hashSync(password);
+    const {
+      id,
+      firstName,
+      lastName,
+      email,
+      address,
+      password,
+      role,
+      verify,
+    } = req.body
+    var passwordHash = bcrypt.hashSync(password)
     db.user
       .findOne({ where: { email: email }, paranoid: false })
       .then((user) => {
         if (!user) {
-          throw new RequestError("User is not found", 409);
+          throw new RequestError('User is not found', 409)
         }
         return db.user.update(
           {
@@ -201,43 +209,43 @@ export default {
             role: role ? role : user.role,
             verify: verify ? verify : user.verify,
           },
-          { where: { id: id } }
-        );
+          { where: { id: id } },
+        )
       })
       .then((user) => {
         if (user) {
           return res
             .status(200)
-            .json({ success: true, msg: "User update successsfully" });
-        } else res.status(500).json({ success: false });
+            .json({ success: true, msg: 'User update successsfully' })
+        } else res.status(500).json({ success: false })
       })
       .catch((err) => {
-        console.log(err);
-        next(err);
-      });
+        console.log(err)
+        next(err)
+      })
   },
 
   async login(req, res, next) {
-    var date = new Date();
-    var token = JWTSign(req.user, date);
-    res.cookie("XSRF-token", token, {
+    var date = new Date()
+    var token = JWTSign(req.user, date)
+    res.cookie('XSRF-token', token, {
       expire: new Date().setDate(date.getDate() + 2),
       httpOnly: true,
       secure: config.app.secure,
-    });
+    })
 
-    return res.status(200).json({ success: true, token, role: req.user.role });
+    return res.status(200).json({ success: true, token, role: req.user.role })
   },
   async sellerLogin(req, res, next) {
-    var date = new Date();
-    var token = JWTSign(req.user, date);
-    res.cookie("XSRF-token", token, {
+    var date = new Date()
+    var token = JWTSign(req.user, date)
+    res.cookie('XSRF-token', token, {
       expire: new Date().setDate(date.getDate() + 2),
       httpOnly: true,
       secure: config.app.secure,
-    });
+    })
 
-    return res.status(200).json({ success: true, token, role: req.user.role });
+    return res.status(200).json({ success: true, token, role: req.user.role })
   },
   async deleteUserList(req, res, next) {
     db.user
@@ -246,27 +254,25 @@ export default {
         if (data) {
           return db.user
             .destroy({ where: { id: req.body.id } })
-            .then((r) => [r, data]);
+            .then((r) => [r, data])
         }
-        throw new RequestError("User is not found", 409);
+        throw new RequestError('User is not found', 409)
       })
       .then((re) => {
-        return res
-          .status(200)
-          .json({ status: "deleted userlist Seccessfully" });
+        return res.status(200).json({ status: 'deleted userlist Seccessfully' })
       })
       .catch((err) => {
-        next(err);
-      });
+        next(err)
+      })
   },
 
   async sellerProfileUpdate(req, res, next) {
-    const { id, phone, firstName, lastName, address } = req.body;
+    const { id, phone, firstName, lastName, address } = req.body
     db.user
       .findOne({ where: { id: id }, paranoid: false })
       .then((user) => {
         if (!user) {
-          throw new RequestError("User is not found", 409);
+          throw new RequestError('User is not found', 409)
         }
         return db.user.update(
           {
@@ -275,19 +281,19 @@ export default {
             address: address ? address : user.address,
             phone: phone ? phone : user.address,
           },
-          { where: { id: id } }
-        );
+          { where: { id: id } },
+        )
       })
       .then((user) => {
         if (user) {
           return res
             .status(200)
-            .json({ success: true, message: "User update successsfully" });
-        } else res.status(500).json({ success: false });
+            .json({ success: true, message: 'User update successsfully' })
+        } else res.status(500).json({ success: false })
       })
       .catch((err) => {
-        console.log(err);
-        next(err);
-      });
+        console.log(err)
+        next(err)
+      })
   },
-};
+}

@@ -1,6 +1,6 @@
 import express from "express";
-import customerController from "./customer.controller";
-import { sanitize } from "../../../middleware/sanitizer";
+import customerController from "./customer.controller.js";
+import { sanitize } from "../../../middleware/sanitizer.js";
 import {
   localCustomerStrategy,
   jwtCustomerStrategy,
@@ -8,9 +8,9 @@ import {
   googleLoginWithIdTokenStrategy,
   googleLoginCallbackStrategy,
   firebaseLoginWithIdTokenStrategy,
-} from "../../../middleware/strategy";
+} from "../../../middleware/strategy.js";
 
-import { validateBody, schemas } from "../../../middleware/validator";
+import { validateBody, schemas } from "../../../middleware/validator.js";
 export const customerRouter = express.Router();
 customerRouter.route("/register").post(sanitize(), customerController.addUser);
 customerRouter

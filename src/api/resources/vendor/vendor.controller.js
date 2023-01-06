@@ -1,59 +1,59 @@
-import { db } from "../../../models";
-const Sequelize = require("sequelize");
-const Op = Sequelize.Op;
-var Util = require("../../../helpers/Util");
+import { db } from '../../../models/index.js'
+const Sequelize = require('sequelize')
+const Op = Sequelize.Op
+var Util = require('../../../helpers/Util')
 
 export default {
   async getAllvendor(req, res, next) {
     try {
       db.user
         .findAll({
-          where: { role: "seller" },
+          where: { role: 'seller' },
           attributes: [
-            "id",
-            "firstName",
-            "lastName",
-            "phone",
-            "role",
-            "verify",
-            "email",
+            'id',
+            'firstName',
+            'lastName',
+            'phone',
+            'role',
+            'verify',
+            'email',
           ],
-          order: [["createdAt", "DESC"]],
+          order: [['createdAt', 'DESC']],
           include: [{ model: db.ch_seller_shopdetail }],
         })
         .then((user) => {
-          res.status(200).json({ status: 200, success: true, data: user });
+          res.status(200).json({ status: 200, success: true, data: user })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async sellerProductList(req, res, next) {
     try {
-      const { SellerId, searchString } = req.query;
-      let arrData = [];
-      const query = {};
-      query.where = {};
+      const { SellerId, searchString } = req.query
+      let arrData = []
+      const query = {}
+      query.where = {}
       try {
-        let search = "%%";
+        let search = '%%'
         if (searchString) {
-          search = "%" + searchString + "%";
+          search = '%' + searchString + '%'
         }
         //limit
-        const limit = req.query.limit ? Number(req.query.limit) : 10;
-        const page = req.query.page ? Number(req.query.page) : 1;
-        query.offset = (page - 1) * limit;
-        query.limit = limit;
+        const limit = req.query.limit ? Number(req.query.limit) : 10
+        const page = req.query.page ? Number(req.query.page) : 1
+        query.offset = (page - 1) * limit
+        query.limit = limit
         query.productName = {
-          [Op.like]: "%" + search + "%",
-        };
+          [Op.like]: '%' + search + '%',
+        }
         query.order = [
-          ["id", "DESC"],
-          ["productName", "ASC"],
-        ];
+          ['id', 'DESC'],
+          ['productName', 'ASC'],
+        ]
         query.include = [
           {
             model: db.product,
@@ -62,46 +62,46 @@ export default {
             },
             offset: limit * (page - 1),
             attributes: [
-              "id",
-              "SellerId",
-              "PubilshStatus",
-              "categoryId",
-              "subCategoryId",
-              "childCategoryId",
+              'id',
+              'SellerId',
+              'PubilshStatus',
+              'categoryId',
+              'subCategoryId',
+              'childCategoryId',
             ],
             include: [
-              { model: db.category, as: "maincat", attributes: ["id", "name"] },
-              { model: db.SubCategory, attributes: ["id", "sub_name"] },
-              { model: db.SubChildCategory, attributes: ["id", "name"] },
+              { model: db.category, as: 'maincat', attributes: ['id', 'name'] },
+              { model: db.SubCategory, attributes: ['id', 'sub_name'] },
+              { model: db.SubChildCategory, attributes: ['id', 'name'] },
             ],
           },
           {
             model: db.ch_brand_detail,
-            as: "brand",
-            attributes: ["id", "name", "slug"],
+            as: 'brand',
+            attributes: ['id', 'name', 'slug'],
           },
           {
             model: db.ch_color_detail,
-            as: "color",
-            attributes: ["id", "TITLE", "CODE"],
+            as: 'color',
+            attributes: ['id', 'TITLE', 'CODE'],
           },
-          { model: db.productphoto, attributes: ["id", "imgUrl"] },
-        ];
+          { model: db.productphoto, attributes: ['id', 'imgUrl'] },
+        ]
         const productlist = await db.ProductVariant.findAndCountAll({
           ...query,
-        });
+        })
         if (productlist.count === 0) {
           let response = Util.getFormatedResponse(false, {
-            message: "No data found",
-          });
-          res.status(response.code).json(response);
+            message: 'No data found',
+          })
+          res.status(response.code).json(response)
         } else {
           productlist.rows.forEach((value) => {
             const dataList = {
-              id: value ? value.id : "",
-              productId: value.product ? value.product.id : "",
-              name: value ? value.productName : "",
-              code: value ? value.productCode : "",
+              id: value ? value.id : '',
+              productId: value.product ? value.product.id : '',
+              name: value ? value.productName : '',
+              code: value ? value.productCode : '',
               slug: value ? value.slug : null,
               Available: value ? value.Available : null,
               qty: value ? value.qty : null,
@@ -120,34 +120,34 @@ export default {
               BrandName: value.brand ? value.brand : null,
               subcat: value.product.SubCategory
                 ? value.product.SubCategory.sub_name
-                : "",
+                : '',
               childcat: value.product.SubChildCategory
                 ? value.product.SubChildCategory.name
-                : "",
+                : '',
               PubilshStatus: value.product.PubilshStatus,
-            };
-            arrData.push(dataList);
-          });
-          let pages = Math.ceil(productlist.count / limit);
+            }
+            arrData.push(dataList)
+          })
+          let pages = Math.ceil(productlist.count / limit)
           const finalResult = {
             count: productlist.count,
             pages: pages,
             items: arrData,
-          };
+          }
           let response = Util.getFormatedResponse(false, finalResult, {
-            message: "Success",
-          });
-          res.status(response.code).json(response);
+            message: 'Success',
+          })
+          res.status(response.code).json(response)
         }
       } catch (err) {
-        throw new RequestError(err);
+        throw new RequestError(err)
       }
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
   async websiteVendorContactCreate(req, res, next) {
-    let { fullname, email, phoneNo, message } = req.body;
+    let { fullname, email, phoneNo, message } = req.body
     try {
       db.chit_seller_contact
         .findOne({ where: { email: email } })
@@ -157,20 +157,20 @@ export default {
             EMAIL: email,
             PHONENO: phoneNo,
             MESSAGE: message,
-          });
+          })
         })
         .then((re) => {
           return res.status(200).json({
             success: true,
-            message: "Seccessfully Added in list we will contact soon",
-          });
+            message: 'Seccessfully Added in list we will contact soon',
+          })
         })
         .catch((err) => {
-          next(err);
-          res.status(500).json({ success: false, message: err });
-        });
+          next(err)
+          res.status(500).json({ success: false, message: err })
+        })
     } catch (err) {
-      res.status(500).json({ success: false, message: err });
+      res.status(500).json({ success: false, message: err })
       // throw new RequestError('Error');
     }
   },
@@ -179,17 +179,17 @@ export default {
     try {
       db.chit_seller_contact
         .findAll({
-          order: [["createdAt", "DESC"]],
+          order: [['createdAt', 'DESC']],
         })
         .then((re) => {
-          return res.status(200).json({ success: true, data: re });
+          return res.status(200).json({ success: true, data: re })
         })
         .catch((err) => {
-          next(err);
-          res.status(500).json({ success: false, message: err });
-        });
+          next(err)
+          res.status(500).json({ success: false, message: err })
+        })
     } catch (err) {
-      res.status(500).json({ success: false, message: err });
+      res.status(500).json({ success: false, message: err })
       // throw new RequestError('Error');
     }
   },
@@ -209,7 +209,7 @@ export default {
       BANKACCOUNTNO,
       BANKACCOUNTHOLDERNAME,
       BANKBRANCH,
-    } = req.body;
+    } = req.body
     try {
       db.ch_seller_shopdetail
         .findOne({
@@ -229,7 +229,7 @@ export default {
               BANKACCOUNTNO: BANKACCOUNTNO,
               BANKACCOUNTHOLDERNAME: BANKACCOUNTHOLDERNAME,
               BANKBRANCH: BANKBRANCH,
-            });
+            })
           }
           return db.ch_seller_shopdetail.update(
             {
@@ -247,19 +247,19 @@ export default {
                 : list.BANKACCOUNTHOLDERNAME,
               BANKBRANCH: BANKBRANCH ? BANKBRANCH : list.BANKBRANCH,
             },
-            { where: { id: list.id } }
-          );
+            { where: { id: list.id } },
+          )
         })
         .then((success) => {
           res
             .status(200)
-            .json({ status: 200, success: true, message: "Successfully" });
+            .json({ status: 200, success: true, message: 'Successfully' })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
@@ -270,13 +270,13 @@ export default {
           where: { SELLERID: req.user.id },
         })
         .then((list) => {
-          res.status(200).json({ status: 200, success: true, data: list });
+          res.status(200).json({ status: 200, success: true, data: list })
         })
         .catch(function (err) {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
 
@@ -286,20 +286,20 @@ export default {
         .findOne({ where: { id: parseInt(req.query.id) } })
         .then((data) => {
           if (data) {
-            return db.ch_seller_shopdetail.destroy({ where: { id: data.id } });
+            return db.ch_seller_shopdetail.destroy({ where: { id: data.id } })
           }
-          throw new RequestError("Sellar is not found");
+          throw new RequestError('Sellar is not found')
         })
         .then((re) => {
           return res
             .status(200)
-            .json({ success: true, message: "deleted  Seccessfully" });
+            .json({ success: true, message: 'deleted  Seccessfully' })
         })
         .catch((err) => {
-          next(err);
-        });
+          next(err)
+        })
     } catch (err) {
-      throw new RequestError(err);
+      throw new RequestError(err)
     }
   },
-};
+}

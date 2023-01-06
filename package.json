@@ -4,10 +4,11 @@
   "description": "groffers-nepal",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon src/index.js --exec babel-node --presets @babel/env",
+    "start": " nodemon src/index.js --exec babel-node --presets @babel/env",
     "build": "babel src -d dist --source-maps inline --copy-files",
     "serve": "node dist/index.js",
-    "sequelize": "sequelize"
+    "sequelize": "sequelize",
+    "lint": "eslint --fix --ext .js,.jsx ."
   },
   "keywords": [],
   "author": "Archit Jain",

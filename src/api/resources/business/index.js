@@ -1,1 +1,1 @@
-export { businessRouter } from './business.router';
+export { businessRouter } from './business.router.js';

@@ -1,1 +1,1 @@
-export { customerRouter } from './customer.router';
+export { customerRouter } from './customer.router.js';

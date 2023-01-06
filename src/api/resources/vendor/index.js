@@ -1,1 +1,1 @@
-export { vendorRouter } from './vendor.router';
+export { vendorRouter } from './vendor.router.js';

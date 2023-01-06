@@ -1,9 +1,9 @@
 import express from "express";
-import categoryController from "./category.controller";
-import { jwtStrategy } from "../../../middleware/strategy";
-import { sanitize } from "../../../middleware/sanitizer";
+import categoryController from "./category.controller.js";
+import { jwtStrategy } from "../../../middleware/strategy.js";
+import { sanitize } from "../../../middleware/sanitizer.js";
 // import { validateBody, schemas } from '../../../middleware/validator';
-import upload from "../../../awsbucket";
+import upload from "../../../awsbucket.js";
 
 export const categoryRouter = express.Router();
 categoryRouter

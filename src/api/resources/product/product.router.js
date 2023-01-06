@@ -1,8 +1,8 @@
 import express from "express";
-import productController from "./product.controller";
-import { jwtStrategy } from "../../../middleware/strategy";
-import { sanitize } from "../../../middleware/sanitizer";
-import upload from "../../../awsbucket";
+import productController from "./product.controller.js";
+import { jwtStrategy } from "../../../middleware/strategy.js";
+import { sanitize } from "../../../middleware/sanitizer.js";
+import upload from "../../../awsbucket.js";
 
 export const productRouter = express.Router();
 productRouter

@@ -1,6 +1,6 @@
 import kue from 'kue';
-import { db } from './models';
-import config from './config';
+import { db } from './models/index.js';
+import config from './config/index.js';
 
 export var queue = kue.createQueue({
     prefix: 'q',

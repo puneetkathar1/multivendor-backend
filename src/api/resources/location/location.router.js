@@ -1,8 +1,8 @@
 import express from 'express';
-import locationController from './location.controller';
-import { sanitize } from '../../../middleware/sanitizer';
-import { jwtStrategy , jwtCustomerStrategy} from '../../../middleware/strategy';
-import { validateBody, schemas } from '../../../middleware/validator';
+import locationController from './location.controller.js';
+import { sanitize } from '../../../middleware/sanitizer.js';
+import { jwtStrategy , jwtCustomerStrategy} from '../../../middleware/strategy.js';
+import { validateBody, schemas } from '../../../middleware/validator.js';
 
 export const locationRouter = express.Router();
 locationRouter.route('/create').post(sanitize(),validateBody(schemas.location),locationController.index);

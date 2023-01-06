@@ -1,6 +1,6 @@
-import nodemailer from "nodemailer";
-import config from "./config";
-import { db } from "./models";
+import nodemailer from 'nodemailer'
+import config from './config/index.js'
+import { db } from './models/index.js'
 
 export default {
   sendOtp: (email, key, otp) => {
@@ -17,16 +17,16 @@ export default {
                 pass: process.env.MAIL_PASSWORD,
               },
               tls: { rejectUnauthorized: false },
-            });
+            })
             smtpTransport.sendMail(
               {
                 from: process.env.MAIL_FROM,
                 to: email,
-                subject: "Chitwashop: OTP for Verify Email",
+                subject: 'Chitwashop: OTP for Verify Email',
                 html:
-                  "Dear user,<br><br> Thank you for registering with Chitwashop.<br> <br> <b> <strong>One Time OTP:</strong> " +
+                  'Dear user,<br><br> Thank you for registering with Chitwashop.<br> <br> <b> <strong>One Time OTP:</strong> ' +
                   otp +
-                  " </b><br> <br> This link will expire in 30sec. <br> This is a system generated mail. Please do not reply to this email ID.<br>Warm Regards,<br> Customer Care<br> Chitwashop",
+                  ' </b><br> <br> This link will expire in 30sec. <br> This is a system generated mail. Please do not reply to this email ID.<br>Warm Regards,<br> Customer Care<br> Chitwashop',
                 // html:
                 //   "Hi <br>" +
                 //   "Your One Time Password(OTP) for completing your registeration on Chitwashop is  " +
@@ -36,23 +36,23 @@ export default {
               function (error, info) {
                 if (error) {
                   return reject({
-                    name: "ChitwashopException",
-                    msg: "Email Sending Failed",
-                  });
+                    name: 'ChitwashopException',
+                    msg: 'Email Sending Failed',
+                  })
                 }
-                return resolve(true);
-              }
-            );
+                return resolve(true)
+              },
+            )
           } else
             throw {
-              name: "GrocerrryException",
-              msg: "Email Body not available",
-            };
-        });
+              name: 'GrocerrryException',
+              msg: 'Email Body not available',
+            }
+        })
       } catch (err) {
-        reject(err);
+        reject(err)
       }
-    });
+    })
   },
   sendEmployeePassword: (email, key) => {
     return new Promise((resolve, reject) => {
@@ -68,42 +68,42 @@ export default {
                 pass: process.env.MAIL_PASSWORD,
               },
               tls: { rejectUnauthorized: false },
-            });
+            })
             smtpTransport.sendMail(
               {
                 from: process.env.MAIL_FROM,
                 to: email,
-                subject: "Chitwashop: Online Shopping Center",
+                subject: 'Chitwashop: Online Shopping Center',
                 html:
-                  "Dear user,<br><br> Thank you for registering with Janakpur.<br> <br> <b> <strong>Click Here:</strong> " +
+                  'Dear user,<br><br> Thank you for registering with Janakpur.<br> <br> <b> <strong>Click Here:</strong> ' +
                   process.env.SALON_URL +
-                  "/verify/" +
+                  '/verify/' +
                   email +
-                  "/" +
+                  '/' +
                   key +
-                  " </b><br> <br> This link will expire in 30sec. <br> This is a system generated mail. Please do not reply to this email ID.<br>Warm Regards,<br> Customer Care<br> Chitwashop",
+                  ' </b><br> <br> This link will expire in 30sec. <br> This is a system generated mail. Please do not reply to this email ID.<br>Warm Regards,<br> Customer Care<br> Chitwashop',
                 // html: "Hi <br>" + "Your One Time Password(OTP) for completing your registeration on KDMARC is  " + password + " .Please do not share OTP with anyone .<br> Best Regards, <br> Team KDMARC",
               },
               function (error, info) {
                 if (error) {
                   return reject({
-                    name: "ChitwashopException",
-                    msg: "Email Sending Failed",
-                  });
+                    name: 'ChitwashopException',
+                    msg: 'Email Sending Failed',
+                  })
                 }
-                return resolve(true);
-              }
-            );
+                return resolve(true)
+              },
+            )
           } else
             throw {
-              name: "GrocerrryException",
-              msg: "Email Body not available",
-            };
-        });
+              name: 'GrocerrryException',
+              msg: 'Email Body not available',
+            }
+        })
       } catch (err) {
-        reject(err);
+        reject(err)
       }
-    });
+    })
   },
   sendEmailToVendor: (email, productName) => {
     var smtpTransport = nodemailer.createTransport({
@@ -116,25 +116,25 @@ export default {
         pass: process.env.MAIL_PASSWORD,
       },
       tls: { rejectUnauthorized: false },
-    });
+    })
     smtpTransport.sendMail(
       {
         from: process.env.MAIL_FROM,
         to: email,
-        subject: "New Order",
+        subject: 'New Order',
         text: `You Just received an order for ${productName}`,
       },
       function (error, info) {
         if (error || (info && info.rejected.length)) {
           return reject({
-            name: "Exception",
-            msg: "Email Sending Failed",
+            name: 'Exception',
+            msg: 'Email Sending Failed',
             error: error,
-          });
+          })
         }
-        return resolve(true);
-      }
-    );
+        return resolve(true)
+      },
+    )
   },
   sendResetPassword: (email) => {
     return new Promise((resolve, reject) => {
@@ -143,7 +143,7 @@ export default {
           .findOne({ where: { email: email, role: role } })
           .then((user) => {
             if (user && user.verify == 1) {
-              var key = Math.random().toString(36).slice(2);
+              var key = Math.random().toString(36).slice(2)
               db.customer
                 .update({ verf_key: key }, { where: { id: user.id } })
                 .then((r) => {
@@ -157,40 +157,40 @@ export default {
                       pass: process.env.MAIL_PASSWORD,
                     },
                     tls: { rejectUnauthorized: false },
-                  });
+                  })
                   smtpTransport.sendMail(
                     {
                       from: process.env.MAIL_FROM,
                       to: email,
-                      subject: "Chitwashop: Online Shopping Center",
+                      subject: 'Chitwashop: Online Shopping Center',
                       text:
-                        "Click on this link to reset your password - " +
+                        'Click on this link to reset your password - ' +
                         process.env.SALON_URL +
-                        "/reset/" +
+                        '/reset/' +
                         email +
-                        "/" +
+                        '/' +
                         key,
                     },
                     function (error, info) {
                       if (error || (info && info.rejected.length)) {
                         return reject({
-                          name: "Exception",
-                          msg: "Email Sending Failed",
+                          name: 'Exception',
+                          msg: 'Email Sending Failed',
                           error: error,
-                        });
+                        })
                       }
-                      return resolve(true);
-                    }
-                  );
-                });
+                      return resolve(true)
+                    },
+                  )
+                })
             } else {
-              reject(new Error("user not valid"));
+              reject(new Error('user not valid'))
             }
-          });
+          })
       } catch (err) {
-        reject(err);
+        reject(err)
       }
-    });
+    })
   },
 
   sendInvoiceForCustomer: (body, list, addrdetails, name, orderNo, user) => {
@@ -266,14 +266,14 @@ export default {
                 </td>
                 <td style="padding:2px;width:50%;text-align: right;">
                   <p style="font-size:14px;margin:0;"> Rs.${
-                    item.qty + "*" + item.netPrice
+                    item.qty + '*' + item.netPrice
                   }</p>
                 </td>
               </tr>
-              `;
+              `
                 })
-                .join("")}
-              `;
+                .join('')}
+              `
 
     const htmlFooter = ` </tbody>
             <tfooter>
@@ -292,13 +292,13 @@ export default {
           </table>
         </body>
         
-        </html>`;
-    const totalHtml = htmlHeader + htmlFooter;
+        </html>`
+    const totalHtml = htmlHeader + htmlFooter
     return new Promise((resolve, reject) => {
       try {
         db.customer.findOne({ where: { email: user.email } }).then((user) => {
           if (user && user.verify == 1) {
-            var key = Math.random().toString(36).slice(2);
+            var key = Math.random().toString(36).slice(2)
             db.customer
               .update({ verf_key: key }, { where: { id: user.id } })
               .then((r) => {
@@ -312,35 +312,35 @@ export default {
                     pass: process.env.MAIL_PASSWORD,
                   },
                   tls: { rejectUnauthorized: false },
-                });
+                })
                 smtpTransport.sendMail(
                   {
                     from: process.env.MAIL_FROM,
                     to: user.email,
                     subject:
-                      "Your ChitwaShop Order Confirmation. Please share your feedback",
+                      'Your ChitwaShop Order Confirmation. Please share your feedback',
                     html: totalHtml,
                   },
                   function (error, info) {
                     if (error || (info && info.rejected.length)) {
                       return reject({
-                        name: "Exception",
-                        msg: "Email Sending Failed",
+                        name: 'Exception',
+                        msg: 'Email Sending Failed',
                         error: error,
-                      });
+                      })
                     }
-                    return resolve(true);
-                  }
-                );
-              });
+                    return resolve(true)
+                  },
+                )
+              })
           } else {
-            reject(new Error("user not valid"));
+            reject(new Error('user not valid'))
           }
-        });
+        })
       } catch (err) {
-        reject(err);
+        reject(err)
       }
-    });
+    })
   },
 
   sendInvoiceForCustomerNew: (body, addrdetails, orderNo, user) => {
@@ -397,9 +397,9 @@ export default {
                 }</p>
                       <p style="font-size:14px;margin:0 0 0 0;"><span style="font-weight:bold;display:inline-block;min-width:146px">Shipping Address</span>${
                         addrdetails.shipping +
-                        ", " +
+                        ', ' +
                         addrdetails.city +
-                        ", " +
+                        ', ' +
                         addrdetails.states
                       }  </p>
                 </td>
@@ -426,17 +426,17 @@ export default {
                 <td style="padding:2px;width:50%;text-align: right;">
                   <p style="font-size:14px;margin:0;"> Rs.${
                     item.quantity +
-                    "*" +
+                    '*' +
                     item.netPrice +
-                    "=" +
+                    '=' +
                     item.quantity * item.netPrice
                   }</p>
                 </td>
               </tr>
-              `;
+              `
                 })
-                .join("")}
-              `;
+                .join('')}
+              `
 
     const htmlFooter = ` </tbody>
             <tfooter>
@@ -455,13 +455,13 @@ export default {
           </table>
         </body>
         
-        </html>`;
-    const totalHtml = htmlHeader + htmlFooter;
+        </html>`
+    const totalHtml = htmlHeader + htmlFooter
     return new Promise((resolve, reject) => {
       try {
         db.customer.findOne({ where: { email: user.email } }).then((user) => {
           if (user && user.verify == 1) {
-            var key = Math.random().toString(36).slice(2);
+            var key = Math.random().toString(36).slice(2)
             db.customer
               .update({ verf_key: key }, { where: { id: user.id } })
               .then((r) => {
@@ -475,34 +475,34 @@ export default {
                     pass: process.env.MAIL_PASSWORD,
                   },
                   tls: { rejectUnauthorized: false },
-                });
+                })
                 smtpTransport.sendMail(
                   {
                     from: process.env.MAIL_FROM,
                     to: user.email,
                     subject:
-                      "Your ChitwaShop Order Confirmation. Please share your feedback",
+                      'Your ChitwaShop Order Confirmation. Please share your feedback',
                     html: totalHtml,
                   },
                   function (error, info) {
                     if (error || (info && info.rejected.length)) {
                       return reject({
-                        name: "Exception",
-                        msg: "Email Sending Failed",
+                        name: 'Exception',
+                        msg: 'Email Sending Failed',
                         error: error,
-                      });
+                      })
                     }
-                    return resolve(true);
-                  }
-                );
-              });
+                    return resolve(true)
+                  },
+                )
+              })
           } else {
-            reject(new Error("user not valid"));
+            reject(new Error('user not valid'))
           }
-        });
+        })
       } catch (err) {
-        reject(err);
+        reject(err)
       }
-    });
+    })
   },
-};
+}
